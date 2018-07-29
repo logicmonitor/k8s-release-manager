@@ -20,9 +20,13 @@ type S3 struct {
 
 // S3Opts represents the S3 backend configuration options
 type S3Opts struct {
+	Auth   *S3Auth
+	Bucket string
+	Region string
+}
+
+type S3Auth struct {
 	AccessKeyID     string `default:""`
-	Bucket          string
-	Region          string
 	SecretAccessKey string `default:""`
 	SessionToken    string `default:""`
 }
@@ -109,20 +113,20 @@ func (b *S3) client() *s3.S3 {
 }
 
 func (b *S3) getCreds() *credentials.Credentials {
-	if b.Opts.AccessKeyID == "" || b.Opts.SecretAccessKey == "" {
+	if b.Opts.Auth.AccessKeyID == "" || b.Opts.Auth.SecretAccessKey == "" {
 		return nil
 	}
 
-	if b.Opts.SessionToken != "" {
+	if b.Opts.Auth.SessionToken != "" {
 		return credentials.NewStaticCredentialsFromCreds(credentials.Value{
-			AccessKeyID:     b.Opts.AccessKeyID,
-			SecretAccessKey: b.Opts.SecretAccessKey,
-			SessionToken:    b.Opts.SessionToken,
+			AccessKeyID:     b.Opts.Auth.AccessKeyID,
+			SecretAccessKey: b.Opts.Auth.SecretAccessKey,
+			SessionToken:    b.Opts.Auth.SessionToken,
 		})
 	}
 	return credentials.NewStaticCredentialsFromCreds(credentials.Value{
-		AccessKeyID:     b.Opts.AccessKeyID,
-		SecretAccessKey: b.Opts.SecretAccessKey,
+		AccessKeyID:     b.Opts.Auth.AccessKeyID,
+		SecretAccessKey: b.Opts.Auth.SecretAccessKey,
 	})
 }
 

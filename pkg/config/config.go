@@ -1,27 +1,28 @@
 package config
 
-import (
-	"github.com/kelseyhightower/envconfig"
-)
-
-// Config represents the application's configuration file.
+// Config represents the application's configuration
 type Config struct {
-	DebugMode          bool
-	ManagerReleaseName string `default:""`
-	PollingInterval    int64
-	ReleaseTimeoutSec  int64 `default:"300"`
-	StoragePath        string
-	TillerHost         string
-	TillerNamespace    string `default:"kube-system"`
-	VerboseMode        bool
+	DebugMode   bool
+	VerboseMode bool
+	Helm        *HelmConfig
+	Manager     *ManagerConfig
+	Client      *ClientConfig
 }
 
-// New returns the application configuration specified by the config file.
-func New() (*Config, error) {
-	c := &Config{}
-	if err := envconfig.Process("rlsmgr", c); err != nil {
-		return nil, err
-	}
+// HelmConfig represents the application's configurations for interacting with Helm
+type HelmConfig struct {
+	TillerHost      string
+	TillerNamespace string `default:"kube-system"`
+}
 
-	return c, nil
+// ManagerConfig represents configurations for manager mode
+type ManagerConfig struct {
+	ReleaseName     string `default:""`
+	PollingInterval int64
+	StoragePath     string
+}
+
+// ClientConfig represents configurations for client mode
+type ClientConfig struct {
+	ReleaseTimeoutSec int64 `default:"300"`
 }

@@ -28,11 +28,13 @@ var s3Cmd = &cobra.Command{
 
 		b := &backend.S3{
 			Opts: &backend.S3Opts{
-				AccessKeyID:     accessKeyID,
-				Bucket:          bucket,
-				Region:          region,
-				SecretAccessKey: secretAccessKey,
-				SessionToken:    sessionToken,
+				Auth: &backend.S3Auth{
+					AccessKeyID:     accessKeyID,
+					SecretAccessKey: secretAccessKey,
+					SessionToken:    sessionToken,
+				},
+				Bucket: bucket,
+				Region: region,
 			},
 		}
 

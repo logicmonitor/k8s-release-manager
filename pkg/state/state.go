@@ -24,7 +24,7 @@ type State struct {
 // Init the release manager state
 func (s *State) Init() error {
 	s.init = false
-	if s.Config.ManagerReleaseName != "" {
+	if s.Config.Manager.ReleaseName != "" {
 		path := s.remoteFilePath(constants.ManagerStateFilename)
 		log.Infof("Deleting old state %s", path)
 		err := s.Backend.Delete(path)
@@ -37,7 +37,7 @@ func (s *State) Init() error {
 
 // Update updates the release manager state on the backend
 func (s *State) Update(releases []*rls.Release) error {
-	if s.Config.ManagerReleaseName == "" {
+	if s.Config.Manager.ReleaseName == "" {
 		log.Debugf("--release-name not specified. Ignoring state.")
 		return nil
 	}
@@ -47,14 +47,14 @@ func (s *State) Update(releases []*rls.Release) error {
 		if s.isManagerRelease(r.GetName()) {
 			return s.updateState(&Info{
 				ReleaseFilename: release.Filename(r),
-				ReleaseName:     s.Config.ManagerReleaseName,
+				ReleaseName:     s.Config.Manager.ReleaseName,
 				ReleaseVersion:  r.GetVersion(),
 			})
 		}
 	}
 
 	// if the manager release no longer exists, delete the remote state
-	log.Debugf("Release manager release %s doesn't exist. Deleting.", s.Config.ManagerReleaseName)
+	log.Debugf("Release manager release %s doesn't exist. Deleting.", s.Config.Manager.ReleaseName)
 	err := s.delete()
 	if err != nil {
 		// TODO check if the error is because the file is already deleted
@@ -119,7 +119,7 @@ func (s *State) delete() error {
 
 func (s *State) isManagerRelease(name string) bool {
 	// check if the release name was explicitly set by flag
-	if s.Config.ManagerReleaseName != "" && name == s.Config.ManagerReleaseName {
+	if s.Config.Manager.ReleaseName != "" && name == s.Config.Manager.ReleaseName {
 		return true
 	}
 	return false
@@ -186,7 +186,7 @@ func (s *State) StoredReleases() (ret []*rls.Release, err error) {
 // StoredReleaseNames returns the list of release filenames currently stored in the backend
 func (s *State) StoredReleaseNames() (ret []string, err error) {
 	log.Debugf("Finding releases stored in the backend.")
-	names, err := s.Backend.List(s.Config.StoragePath)
+	names, err := s.Backend.List(s.Config.Manager.StoragePath)
 	if err != nil {
 		return
 	}
@@ -203,8 +203,8 @@ func (s *State) StoredReleaseNames() (ret []string, err error) {
 
 // remoteFilePath returns the full appropriate backend file path based on the app's configuration
 func (s *State) remoteFilePath(name string) string {
-	if s.Config.StoragePath == s.Backend.PathSeparator() {
+	if s.Config.Manager.StoragePath == s.Backend.PathSeparator() {
 		return name
 	}
-	return s.Config.StoragePath + s.Backend.PathSeparator() + name
+	return s.Config.Manager.StoragePath + s.Backend.PathSeparator() + name
 }

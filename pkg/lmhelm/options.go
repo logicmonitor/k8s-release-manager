@@ -9,7 +9,7 @@ import (
 func installOpts(r *rls.Release, vals []byte, config *config.Config) []helm.InstallOption {
 	return []helm.InstallOption{
 		helm.InstallReuseName(true),
-		helm.InstallTimeout(config.ReleaseTimeoutSec),
+		helm.InstallTimeout(config.Client.ReleaseTimeoutSec),
 		helm.InstallWait(true),
 		helm.ReleaseName(r.Name),
 		helm.ValueOverrides(vals),

@@ -44,45 +44,38 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Manager, error)
 		return nil, err
 	}
 
-	state := &state.State{
-		Backend: backend,
-		Config:  rlsmgrconfig,
-	}
-
 	c := &Manager{
 		Client:     client,
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
-		State:      state,
+		State: &state.State{
+			Backend: backend,
+			Config:  rlsmgrconfig,
+		},
 	}
 	return c, nil
 }
 
 // Run starts starts the release manager.
 func (m *Manager) Run() error {
+	var run func() error
 	if !m.Config.DebugMode {
 		err := m.State.Init()
 		if err != nil {
 			return err
 		}
-
-		for {
-			log.Debugf("Checking Tiller for installed releases")
-			err := m.exportReleases()
-			if err != nil {
-				log.Errorf("%v", err)
-			}
-			time.Sleep(time.Duration(m.Config.PollingInterval) * time.Second)
-		}
-		return nil
+		run = m.exportReleases
+	} else {
+		run = m.printReleases
 	}
-	log.Debugf("Debug mode enabled. Printing release info.")
+
 	for {
-		err := m.printReleases()
+		log.Debugf("Checking Tiller for installed releases")
+		err := run()
 		if err != nil {
 			log.Errorf("%v", err)
 		}
-		time.Sleep(time.Duration(m.Config.PollingInterval) * time.Second)
+		time.Sleep(time.Duration(m.Config.Manager.PollingInterval) * time.Second)
 	}
 	return nil
 }
@@ -117,10 +110,28 @@ func (m *Manager) exportReleases() error {
 	if err != nil {
 		log.Warnf("%v", err)
 	}
-	return m.updateReleases(currentReleases, storedReleaseNames)
+	return m.export(currentReleases, storedReleaseNames)
 }
 
-func (m *Manager) updateReleases(current []*rls.Release, stored []string) error {
+func (m *Manager) export(current []*rls.Release, stored []string) error {
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func(current []*rls.Release, stored []string) {
+		defer wg.Done()
+		m.updateReleases(current, stored)
+	}(current, stored)
+
+	go func(current []*rls.Release, stored []string) {
+		defer wg.Done()
+		m.deleteReleases(current, stored)
+	}(current, stored)
+
+	wg.Wait()
+	return nil
+}
+
+func (m *Manager) updateReleases(current []*rls.Release, stored []string) {
 	var wg sync.WaitGroup
 
 	updatedReleases := updatedReleases(current, stored)
@@ -134,6 +145,12 @@ func (m *Manager) updateReleases(current []*rls.Release, stored []string) error 
 			}
 		}(r)
 	}
+	wg.Wait()
+	return
+}
+
+func (m *Manager) deleteReleases(current []*rls.Release, stored []string) {
+	var wg sync.WaitGroup
 
 	deletedReleases := deletedReleases(current, stored)
 	for _, f := range deletedReleases {
@@ -148,7 +165,7 @@ func (m *Manager) updateReleases(current []*rls.Release, stored []string) error 
 	}
 
 	wg.Wait()
-	return nil
+	return
 }
 
 func (m *Manager) currentReleases() ([]*rls.Release, error) {

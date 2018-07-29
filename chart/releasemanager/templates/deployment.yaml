@@ -46,7 +46,11 @@ spec:
 {{- end }}
 {{- if .Values.tillerNamespace }}
           - --namespace
-          - {{ .Values.tillerNamespace }}
+          - {{ .Values.tillerHost }}
+{{- end }}
+{{- if .Values.tillerNamespace }}
+          - --tiller-host
+          - {{ .Values.tillerHost }}
 {{- end }}
 {{- if and .Values.s3 (eq .Values.backend.type "s3") }}
           - --region

@@ -79,8 +79,8 @@ func (c *Client) Config() *config.Config {
 
 func (c *Client) getHelmSettings() helm_env.EnvSettings {
 	var settings helm_env.EnvSettings
-	settings.TillerHost = c.rlsmgrconfig.TillerHost
-	settings.TillerNamespace = c.rlsmgrconfig.TillerNamespace
+	settings.TillerHost = c.rlsmgrconfig.Helm.TillerHost
+	settings.TillerNamespace = c.rlsmgrconfig.Helm.TillerNamespace
 	return settings
 }
 
