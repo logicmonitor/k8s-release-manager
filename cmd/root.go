@@ -45,8 +45,8 @@ func Execute() {
 
 func init() {
 	rlsmgrconfig = &config.Config{}
-	RootCmd.PersistentFlags().StringVarP(&tillerHost, "tiller-host", "", "kube-system", "The namespace where Tiller is deployed.")
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "Debug mode. Log release info and skip writing to backend.")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output.")
+	RootCmd.PersistentFlags().StringVarP(&tillerHost, "tiller-host", "", "", "The tiller hostname and port.")
 	RootCmd.PersistentFlags().StringVarP(&tillerNamespace, "namespace", "n", "kube-system", "The namespace where Tiller is deployed.")
 }

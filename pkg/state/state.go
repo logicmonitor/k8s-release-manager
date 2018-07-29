@@ -57,7 +57,6 @@ func (s *State) Update(releases []*rls.Release) error {
 	log.Debugf("Release manager release %s doesn't exist. Deleting.", s.Config.Manager.ReleaseName)
 	err := s.delete()
 	if err != nil {
-		// TODO check if the error is because the file is already deleted
 		return err
 	}
 	return nil
@@ -69,9 +68,9 @@ func (s *State) updateState(i *Info) (err error) {
 	// don't attempt to read the remote state if this is our first update
 	if s.init {
 		// check to see if the state is stale
-		oldInfo, err := s.read()
-		if err != nil {
-			log.Warnf("Error reading remote state: %v", err)
+		oldInfo, e := s.read()
+		if e != nil {
+			log.Warnf("Error reading remote state: %v", e)
 			update = true
 		}
 
@@ -89,7 +88,7 @@ func (s *State) updateState(i *Info) (err error) {
 			return
 		}
 	}
-	return
+	return err
 }
 
 func (s *State) read() (i *Info, err error) {
@@ -146,22 +145,14 @@ func (s *State) WriteRelease(r *rls.Release) error {
 
 	path := s.remoteFilePath(release.Filename(r))
 	log.Debugf("Writing remote release %s", path)
-	err = s.Backend.Write(path, f)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.Backend.Write(path, f)
 }
 
 // DeleteRelease deletes the remote release represented by the specified filename
 func (s *State) DeleteRelease(f string) error {
 	path := s.remoteFilePath(f)
 	log.Debugf("Deleting remote release %s", path)
-	err := s.Backend.Delete(path)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.Backend.Delete(path)
 }
 
 // StoredReleases returns the list of release structs currently stored in the backend
@@ -169,18 +160,18 @@ func (s *State) StoredReleases() (ret []*rls.Release, err error) {
 	// TODO test
 	filenames, err := s.StoredReleaseNames()
 	if err != nil {
-		return
+		return ret, err
 	}
 
 	for _, f := range filenames {
-		r, err := s.ReadRelease(f)
-		if err != nil {
-			log.Warnf("%v", err)
+		r, e := s.ReadRelease(f)
+		if e != nil {
+			log.Warnf("%v", e)
 			continue
 		}
 		ret = append(ret, r)
 	}
-	return
+	return ret, err
 }
 
 // StoredReleaseNames returns the list of release filenames currently stored in the backend
@@ -188,7 +179,7 @@ func (s *State) StoredReleaseNames() (ret []string, err error) {
 	log.Debugf("Finding releases stored in the backend.")
 	names, err := s.Backend.List(s.Config.Manager.StoragePath)
 	if err != nil {
-		return
+		return ret, err
 	}
 
 	// ignore non release files in path, e.g. state, other cruft outside our control
@@ -198,7 +189,7 @@ func (s *State) StoredReleaseNames() (ret []string, err error) {
 			ret = append(ret, n)
 		}
 	}
-	return
+	return ret, err
 }
 
 // remoteFilePath returns the full appropriate backend file path based on the app's configuration
