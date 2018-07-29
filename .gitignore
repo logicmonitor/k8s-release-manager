@@ -3,4 +3,4 @@ coverage.txt
 run.sh
 notes.txt
 k8s-release-manager
-test.sh
+/test.sh

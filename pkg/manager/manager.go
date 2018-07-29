@@ -44,7 +44,7 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Manager, error)
 		return nil, err
 	}
 
-	c := &Manager{
+	return &Manager{
 		Client:     client,
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
@@ -52,8 +52,7 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Manager, error)
 			Backend: backend,
 			Config:  rlsmgrconfig,
 		},
-	}
-	return c, nil
+	}, nil
 }
 
 // Run starts starts the release manager.
