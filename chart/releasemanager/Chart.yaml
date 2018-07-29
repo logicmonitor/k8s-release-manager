@@ -1,0 +1,9 @@
+description: Release Manager provides a long-running application that will periodically
+poll the Tiller server installed in your cluster. The application will
+retrieve all installed releases in the cluster and write them to the
+configured external storage location. The exported data can be retrieved in
+the future and used the deploy the exported Helm releases to a different
+cluster. The intended use case is to simplify cluster replication actions such
+blue/green cluster deployments and disaster recovery scenarios.
+name: releasemanager
+version: 0.1.0

@@ -1,0 +1,16 @@
+# Default values for releasemanager.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: releasemanager
+  tag: latest
+  pullPolicy: IfNotPresent
+
+debug: false
+verbose: false
+
+backend:
+  type: s3
