@@ -63,6 +63,27 @@ func init() {
 }
 
 func validate(cmd *cobra.Command) {
+	valid := validateConfig() && validateAuth() && validateS3()
+
+	if !valid {
+		err := cmd.Help()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		os.Exit(0)
+	}
+}
+
+func validateConfig() bool {
+	valid := true
+	if storagePath == "" {
+		fmt.Println("You must specify --path")
+		valid = false
+	}
+	return valid
+}
+
+func validateS3() bool {
 	valid := true
 	if bucket == "" {
 		fmt.Println("You must specify --bucket")
@@ -72,12 +93,11 @@ func validate(cmd *cobra.Command) {
 		fmt.Println("You must specify --region")
 		valid = false
 	}
+	return valid
+}
 
-	if storagePath == "" {
-		fmt.Println("You must specify --path")
-		valid = false
-	}
-
+func validateAuth() bool {
+	valid := true
 	if (accessKeyID != "" && secretAccessKey == "") || (secretAccessKey != "" && accessKeyID == "") {
 		fmt.Println("You must specify both --accessKeyID and --secretAccessKey or neither")
 		valid = false
@@ -87,9 +107,5 @@ func validate(cmd *cobra.Command) {
 		fmt.Println("If --sessionToken is specified, you must specify --accessKeyID and --secretAccessKey")
 		valid = false
 	}
-
-	if !valid {
-		cmd.Help()
-		os.Exit(0)
-	}
+	return valid
 }

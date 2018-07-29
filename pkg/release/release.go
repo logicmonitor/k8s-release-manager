@@ -30,7 +30,7 @@ Values: %s`,
 	if verbose {
 		ret += fmt.Sprintf("\nChart: %s", r.GetChart().String())
 	}
-	return
+	return ret, err
 }
 
 // Filename returns the calculated filename for the specified release
@@ -52,12 +52,12 @@ func FromFile(f []byte) (r *rls.Release, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return
+	return r, err
 }
 
 // ToFile serializes the release into an io.Reader for writing to a filesystem
-func ToFile(r *rls.Release) (io.Reader, error) {
-	f, err := proto.Marshal(r)
+func ToFile(m proto.Message) (io.Reader, error) {
+	f, err := proto.Marshal(m)
 	if err != nil {
 		return nil, err
 	}

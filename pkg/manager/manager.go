@@ -77,7 +77,6 @@ func (m *Manager) Run() error {
 		}
 		time.Sleep(time.Duration(m.Config.Manager.PollingInterval) * time.Second)
 	}
-	return nil
 }
 
 func (m *Manager) printReleases() error {
@@ -146,7 +145,6 @@ func (m *Manager) updateReleases(current []*rls.Release, stored []string) {
 		}(r)
 	}
 	wg.Wait()
-	return
 }
 
 func (m *Manager) deleteReleases(current []*rls.Release, stored []string) {
@@ -165,7 +163,6 @@ func (m *Manager) deleteReleases(current []*rls.Release, stored []string) {
 	}
 
 	wg.Wait()
-	return
 }
 
 func (m *Manager) currentReleases() ([]*rls.Release, error) {
@@ -188,7 +185,7 @@ func updatedReleases(current []*rls.Release, stored []string) (ret []*rls.Releas
 			ret = append(ret, c)
 		}
 	}
-	return
+	return ret
 }
 
 // deleted returns the filenames of stored releases that not longer exist
@@ -206,5 +203,5 @@ func deletedReleases(current []*rls.Release, stored []string) (ret []string) {
 			ret = append(ret, s)
 		}
 	}
-	return
+	return ret
 }

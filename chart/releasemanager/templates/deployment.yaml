@@ -46,9 +46,9 @@ spec:
 {{- end }}
 {{- if .Values.tillerNamespace }}
           - --namespace
-          - {{ .Values.tillerHost }}
+          - {{ .Values.tillerNamespace }}
 {{- end }}
-{{- if .Values.tillerNamespace }}
+{{- if .Values.tillerHost }}
           - --tiller-host
           - {{ .Values.tillerHost }}
 {{- end }}

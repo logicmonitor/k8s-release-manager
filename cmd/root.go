@@ -9,9 +9,10 @@ import (
 )
 
 var rlsmgrconfig *config.Config
-var cfgFile string
 var debug bool
 var verbose bool
+var tillerHost string
+var tillerNamespace string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -43,7 +44,9 @@ func Execute() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.k8s-release-manager.yaml)")
+	rlsmgrconfig = &config.Config{}
+	RootCmd.PersistentFlags().StringVarP(&tillerHost, "tiller-host", "", "kube-system", "The namespace where Tiller is deployed.")
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "Debug mode. Log release info and skip writing to backend.")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output.")
+	RootCmd.PersistentFlags().StringVarP(&tillerNamespace, "namespace", "n", "kube-system", "The namespace where Tiller is deployed.")
 }

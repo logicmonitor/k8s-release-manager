@@ -1,20 +1,19 @@
 package lmhelm
 
 import (
-	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"k8s.io/helm/pkg/helm"
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
-func installOpts(r *rls.Release, vals []byte, config *config.Config) []helm.InstallOption {
-	return []helm.InstallOption{
-		helm.InstallReuseName(true),
-		helm.InstallTimeout(config.Client.ReleaseTimeoutSec),
-		helm.InstallWait(true),
-		helm.ReleaseName(r.Name),
-		helm.ValueOverrides(vals),
-	}
-}
+// func installOpts(r *rls.Release, vals []byte, config *config.Config) []helm.InstallOption {
+// 	return []helm.InstallOption{
+// 		helm.InstallReuseName(true),
+// 		helm.InstallTimeout(config.Client.ReleaseTimeoutSec),
+// 		helm.InstallWait(true),
+// 		helm.ReleaseName(r.Name),
+// 		helm.ValueOverrides(vals),
+// 	}
+// }
 
 func listOpts() []helm.ReleaseListOption {
 	return []helm.ReleaseListOption{

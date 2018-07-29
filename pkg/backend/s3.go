@@ -25,6 +25,7 @@ type S3Opts struct {
 	Region string
 }
 
+// S3Auth represents the S3 backend authentication configuration options
 type S3Auth struct {
 	AccessKeyID     string `default:""`
 	SecretAccessKey string `default:""`
@@ -89,7 +90,7 @@ func (b *S3) List(path string) (ret []string, err error) {
 	for _, obj := range result.Contents {
 		ret = append(ret, *obj.Key)
 	}
-	return
+	return ret, err
 }
 
 // PathSeparator returns the backend-specific path separator

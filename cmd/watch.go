@@ -9,8 +9,6 @@ import (
 var pollingInterval int
 var releaseName string
 var storagePath string
-var tillerHost string
-var tillerNamespace string
 
 // managecmd represents the manage command
 var watchCmd = &cobra.Command{
@@ -34,7 +32,5 @@ func init() {
 	watchCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Frequency in seconds for exporting releases.")
 	watchCmd.PersistentFlags().StringVarP(&releaseName, "manager-release", "", "", "The Helm release name used to install the Release Manager. This value is used to prevent configuration conflicts when restoring a saved state to a new cluster.")
 	watchCmd.PersistentFlags().StringVarP(&storagePath, "path", "", "", "Required. Path for storing releases in the storage backend.")
-	watchCmd.PersistentFlags().StringVarP(&tillerHost, "tiller-host", "n", "kube-system", "The namespace where Tiller is deployed.")
-	watchCmd.PersistentFlags().StringVarP(&tillerNamespace, "namespace", "n", "kube-system", "The namespace where Tiller is deployed.")
 	RootCmd.AddCommand(watchCmd)
 }
