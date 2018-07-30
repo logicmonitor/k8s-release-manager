@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sync"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
@@ -114,7 +115,9 @@ func (s *State) write(i *Info) error {
 }
 
 func (s *State) delete() error {
-	return s.Backend.Delete(s.remoteFilePath(constants.ManagerStateFilename))
+	path := s.remoteFilePath(constants.ManagerStateFilename)
+	log.Debugf("Removing remote state %s", path)
+	return s.Backend.Delete(path)
 }
 
 func (s *State) isManagerRelease(name string) bool {
@@ -163,14 +166,20 @@ func (s *State) StoredReleases() (ret []*rls.Release, err error) {
 		return ret, err
 	}
 
+	var wg sync.WaitGroup
 	for _, f := range filenames {
-		r, e := s.ReadRelease(f)
-		if e != nil {
-			log.Warnf("%v", e)
-			continue
-		}
-		ret = append(ret, r)
+		wg.Add(1)
+		go func(f string, ret *[]*rls.Release) {
+			defer wg.Done()
+			r, e := s.ReadRelease(f)
+			if e != nil {
+				log.Warnf("%v", e)
+				return
+			}
+			*ret = append(*ret, r)
+		}(f, &ret)
 	}
+	wg.Wait()
 	return ret, err
 }
 

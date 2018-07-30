@@ -6,11 +6,9 @@ import (
 
 // managecmd represents the manage command
 var clearCmd = &cobra.Command{
-	Use:   "clear",
-	Short: "Deleted all configured releases and state from the backend.",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		return
-	},
+	Use:    "clear",
+	Short:  "Deleted all configured releases and state from the backend.",
+	PreRun: func(cmd *cobra.Command, args []string) {},
 }
 
 func init() {
