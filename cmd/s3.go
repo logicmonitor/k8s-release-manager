@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
+	"github.com/logicmonitor/k8s-release-manager/pkg/delete"
+	"github.com/logicmonitor/k8s-release-manager/pkg/export"
 	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
-	"github.com/logicmonitor/k8s-release-manager/pkg/manager"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -15,97 +14,82 @@ import (
 var accessKeyID string
 var bucket string
 var region string
+var s3Backend backend.Backend
 var secretAccessKey string
 var sessionToken string
 
-// managecmd represents the manage command
-var s3Cmd = &cobra.Command{
-	Use:   "s3",
-	Short: "Periodically poll Tiller and export releases to an S3 bucket",
-	Run: func(cmd *cobra.Command, args []string) {
-		watchCmd.PreRun(cmd, args)
-		validate(cmd)
+func s3PreRun(cmd *cobra.Command) {
+	valid := validateS3Auth() && validateS3Config()
+	if !valid {
+		failAuth(cmd)
+	}
 
-		b := &backend.S3{
-			Opts: &backend.S3Opts{
-				Auth: &backend.S3Auth{
-					AccessKeyID:     accessKeyID,
-					SecretAccessKey: secretAccessKey,
-					SessionToken:    sessionToken,
-				},
-				Bucket: bucket,
-				Region: region,
+	s3Backend = &backend.S3{
+		Opts: &backend.S3Opts{
+			Auth: &backend.S3Auth{
+				AccessKeyID:     accessKeyID,
+				SecretAccessKey: secretAccessKey,
+				SessionToken:    sessionToken,
 			},
-		}
+			Bucket: bucket,
+			Region: region,
+		},
+	}
+}
 
+var s3ExportCmd = &cobra.Command{
+	Use:   "s3",
+	Short: "Use the s3 backend",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		exportCmd.PreRun(cmd, args)
+		s3PreRun(cmd)
+	},
+	Run: func(cmd *cobra.Command, args []string) {
 		// Instantiate the Release Manager.
-		rlsmgr, err := manager.New(rlsmgrconfig, b)
+		export, err := export.New(rlsmgrconfig, s3Backend)
 		if err != nil {
-			log.Fatalf("Failed to create Release Manager: %v", err)
+			log.Fatalf("Failed to create Release Manager exporter: %v", err)
 		}
 
-		// Start the Release Manager.
-		go rlsmgr.Run() // nolint: errcheck
-
+		// Start the exporter.
+		go export.Run() // nolint: errcheck
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
 		// Health check.
 		http.HandleFunc("/healthz", healthz.HandleFunc)
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	},
 }
 
-func init() {
-	s3Cmd.PersistentFlags().StringVarP(&accessKeyID, "accessKeyID", "", "", "AWS access key ID with permissions to access to configured S3 bucket.")
-	s3Cmd.PersistentFlags().StringVarP(&bucket, "bucket", "", "", "The S3 bucket for storing exported releases.")
-	s3Cmd.PersistentFlags().StringVarP(&region, "region", "", "", "The S3 bucket region.")
-	s3Cmd.PersistentFlags().StringVarP(&secretAccessKey, "secretAccessKey", "", "", "AWS secret access key with permissions to access to configured S3 bucket.")
-	s3Cmd.PersistentFlags().StringVarP(&sessionToken, "sessionToken", "", "", "AWS STS session token.")
-	watchCmd.AddCommand(s3Cmd)
-}
-
-func validate(cmd *cobra.Command) {
-	valid := validateConfig() && validateAuth() && validateS3()
-
-	if !valid {
-		err := cmd.Help()
+var s3ClearCmd = &cobra.Command{
+	Use:   "s3",
+	Short: "Use the s3 backend",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		clearCmd.PreRun(cmd, args)
+		s3PreRun(cmd)
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		delete, err := delete.New(rlsmgrconfig, s3Backend)
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Fatalf("Failed to create Release Manager deleter: %v", err)
 		}
-		os.Exit(0)
-	}
+
+		// Start the deleter.
+		delete.Run() // nolint: errcheck
+	},
 }
 
-func validateConfig() bool {
-	valid := true
-	if storagePath == "" {
-		fmt.Println("You must specify --path")
-		valid = false
-	}
-	return valid
+func s3Flags(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringVarP(&accessKeyID, "accessKeyID", "", "", "AWS access key ID with permissions to access to configured S3 bucket.")
+	cmd.PersistentFlags().StringVarP(&bucket, "bucket", "", "", "The S3 bucket for storing exported releases.")
+	cmd.PersistentFlags().StringVarP(&region, "region", "", "", "The S3 bucket region.")
+	cmd.PersistentFlags().StringVarP(&secretAccessKey, "secretAccessKey", "", "", "AWS secret access key with permissions to access to configured S3 bucket.")
+	cmd.PersistentFlags().StringVarP(&sessionToken, "sessionToken", "", "", "AWS STS session token.")
 }
 
-func validateS3() bool {
-	valid := true
-	if bucket == "" {
-		fmt.Println("You must specify --bucket")
-		valid = false
-	}
-	if region == "" {
-		fmt.Println("You must specify --region")
-		valid = false
-	}
-	return valid
-}
-
-func validateAuth() bool {
-	valid := true
-	if (accessKeyID != "" && secretAccessKey == "") || (secretAccessKey != "" && accessKeyID == "") {
-		fmt.Println("You must specify both --accessKeyID and --secretAccessKey or neither")
-		valid = false
-	}
-
-	if sessionToken != "" && (accessKeyID == "" || secretAccessKey == "") {
-		fmt.Println("If --sessionToken is specified, you must specify --accessKeyID and --secretAccessKey")
-		valid = false
-	}
-	return valid
+func init() {
+	s3Flags(s3ExportCmd)
+	s3Flags(s3ClearCmd)
+	exportCmd.AddCommand(s3ExportCmd)
+	clearCmd.AddCommand(s3ClearCmd)
 }

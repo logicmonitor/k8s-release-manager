@@ -2,11 +2,13 @@ package config
 
 // Config represents the application's configuration
 type Config struct {
-	DebugMode   bool
-	VerboseMode bool
-	Helm        *HelmConfig
-	Manager     *ManagerConfig
+	Backend     *BackendConfig
 	Client      *ClientConfig
+	Export      *ExportConfig
+	Helm        *HelmConfig
+	DebugMode   bool
+	DryRun      bool
+	VerboseMode bool
 }
 
 // HelmConfig represents the application's configurations for interacting with Helm
@@ -15,11 +17,16 @@ type HelmConfig struct {
 	TillerNamespace string `default:"kube-system"`
 }
 
-// ManagerConfig represents configurations for manager mode
-type ManagerConfig struct {
-	ReleaseName     string `default:""`
+//BackendConfig represents configuration options for the backend storage
+type BackendConfig struct {
+	StoragePath string
+}
+
+// ExportConfig represents configurations for manager mode
+type ExportConfig struct {
+	DaemonMode      bool
+	ReleaseName     string
 	PollingInterval int64
-	StoragePath     string
 }
 
 // ClientConfig represents configurations for client mode

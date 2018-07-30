@@ -1,4 +1,4 @@
-package manager
+package export
 
 import (
 	"sync"
@@ -15,16 +15,16 @@ import (
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
-// Manager polls Tiller and exports releases
-type Manager struct {
+// Exporter polls Tiller and exports releases
+type Exporter struct {
 	Client     *client.Client
 	Config     *config.Config
 	HelmClient *lmhelm.Client
 	State      *state.State
 }
 
-// New instantiates and returns a Manager and an error if any.
-func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Manager, error) {
+// New instantiates and returns a Exporter and an error if any.
+func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Exporter, error) {
 	// Instantiate the Kubernetes in cluster config.
 	restconfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -44,7 +44,7 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Manager, error)
 		return nil, err
 	}
 
-	return &Manager{
+	return &Exporter{
 		Client:     client,
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
@@ -55,10 +55,10 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Manager, error)
 	}, nil
 }
 
-// Run starts starts the release manager.
-func (m *Manager) Run() error {
+// Run the exporter.
+func (m *Exporter) Run() error {
 	var run func() error
-	if !m.Config.DebugMode {
+	if !m.Config.DryRun {
 		err := m.State.Init()
 		if err != nil {
 			return err
@@ -68,17 +68,21 @@ func (m *Manager) Run() error {
 		run = m.printReleases
 	}
 
+	if !m.Config.Export.DaemonMode {
+		return run()
+	}
+
 	for {
 		log.Debugf("Checking Tiller for installed releases")
 		err := run()
 		if err != nil {
 			log.Errorf("%v", err)
 		}
-		time.Sleep(time.Duration(m.Config.Manager.PollingInterval) * time.Second)
+		time.Sleep(time.Duration(m.Config.Export.PollingInterval) * time.Second)
 	}
 }
 
-func (m *Manager) printReleases() error {
+func (m *Exporter) printReleases() error {
 	currentReleases, err := m.currentReleases()
 	if err != nil {
 		return err
@@ -93,7 +97,7 @@ func (m *Manager) printReleases() error {
 	return nil
 }
 
-func (m *Manager) exportReleases() error {
+func (m *Exporter) exportReleases() error {
 	currentReleases, err := m.currentReleases()
 	if err != nil {
 		return err
@@ -111,7 +115,7 @@ func (m *Manager) exportReleases() error {
 	return m.export(currentReleases, storedReleaseNames)
 }
 
-func (m *Manager) export(current []*rls.Release, stored []string) error {
+func (m *Exporter) export(current []*rls.Release, stored []string) error {
 	var wg sync.WaitGroup
 
 	wg.Add(2)
@@ -129,7 +133,7 @@ func (m *Manager) export(current []*rls.Release, stored []string) error {
 	return nil
 }
 
-func (m *Manager) updateReleases(current []*rls.Release, stored []string) {
+func (m *Exporter) updateReleases(current []*rls.Release, stored []string) {
 	var wg sync.WaitGroup
 
 	updatedReleases := updatedReleases(current, stored)
@@ -146,7 +150,7 @@ func (m *Manager) updateReleases(current []*rls.Release, stored []string) {
 	wg.Wait()
 }
 
-func (m *Manager) deleteReleases(current []*rls.Release, stored []string) {
+func (m *Exporter) deleteReleases(current []*rls.Release, stored []string) {
 	var wg sync.WaitGroup
 
 	deletedReleases := deletedReleases(current, stored)
@@ -164,7 +168,7 @@ func (m *Manager) deleteReleases(current []*rls.Release, stored []string) {
 	wg.Wait()
 }
 
-func (m *Manager) currentReleases() ([]*rls.Release, error) {
+func (m *Exporter) currentReleases() ([]*rls.Release, error) {
 	log.Debugf("Finding releases that exist locally.")
 	return m.HelmClient.ListInstalledReleases()
 }

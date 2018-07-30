@@ -47,7 +47,7 @@ func Filename(r *rls.Release) string {
 
 // FromFile returns a release struct from raw bytes
 func FromFile(f []byte) (r *rls.Release, err error) {
-	// r := &rls.Release{}
+	r = &rls.Release{}
 	err = proto.Unmarshal(f, r)
 	if err != nil {
 		return nil, err

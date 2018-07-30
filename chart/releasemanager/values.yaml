@@ -10,6 +10,7 @@ image:
   pullPolicy: IfNotPresent
 
 debug: false
+dryRun: false
 verbose: false
 
 backend:

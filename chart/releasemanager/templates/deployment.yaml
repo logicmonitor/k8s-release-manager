@@ -24,15 +24,19 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-          - watch
+          - export
+          - --daemon
           - {{ required "A valid .Values.backend.type entry required!" .Values.backend.type }}
           - --path
           - {{ required "A valid .Values.backend.storagePath entry required!" .Values.backend.storagePath }}
-          - --manager-release
+          - --release-name
           - {{ tpl (.Release.Name) .}}
 {{- if .Values.config }}
           - --config
           - {{ .Values.config }}
+{{- end }}
+{{- if .Values.dryRun }}
+          - --dry-run
 {{- end }}
 {{- if .Values.debug }}
           - --debug

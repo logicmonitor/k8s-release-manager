@@ -3,6 +3,7 @@ package backend
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -88,7 +89,8 @@ func (b *S3) List(path string) (ret []string, err error) {
 	}
 
 	for _, obj := range result.Contents {
-		ret = append(ret, *obj.Key)
+		// trim the leading path from the filename
+		ret = append(ret, strings.Replace(*obj.Key, path+b.PathSeparator(), "", 1))
 	}
 	return ret, err
 }
