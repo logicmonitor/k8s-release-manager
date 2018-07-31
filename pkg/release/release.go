@@ -4,21 +4,26 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
+	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"k8s.io/helm/pkg/proto/hapi/chart"
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
 // ToString returns the string representation of the release
-func ToString(r *rls.Release, verbose bool) (ret string, err error) {
+func ToString(r *rls.Release, verbose bool) (ret string) {
 	ret = fmt.Sprintf(`Name: %s
 Filename: %s
 Status: %s
 Version: %d
 Namespace: %s
-Values: %s`,
+Values:
+%s`,
 		r.GetName(),
 		Filename(r),
 		r.GetInfo().GetStatus().GetCode().String(),
@@ -30,7 +35,9 @@ Values: %s`,
 	if verbose {
 		ret += fmt.Sprintf("\nChart: %s", r.GetChart().String())
 	}
-	return ret, err
+	return ret
+}
+
 }
 
 // Filename returns the calculated filename for the specified release
@@ -62,6 +69,83 @@ func ToFile(m proto.Message) (io.Reader, error) {
 		return nil, err
 	}
 	return bytes.NewReader(f), nil
+}
+
+// UpdateValue configured in the release
+func UpdateValue(r *rls.Release, name string, value string) (*rls.Release, error) {
+	// it's unclear how helm is utilizing config.Raw() vs config.Values
+	// to be safe, i'm just going to attempt to update both and see what happens
+	var err error
+	config := r.GetConfig()
+	values := config.GetValues()
+	raw := config.GetRaw()
+
+	config.Values, err = updateValueStruct(values, name, value)
+	if err != nil {
+		log.Errorf("Error updating values struct: %v", err)
+	}
+
+	config.Raw, err = updateValueRaw(raw, name, value)
+	if err != nil {
+		log.Errorf("Error updating raw values: %v", err)
+	}
+
+	r.Config = config
+	return r, nil
+}
+
+func updateValueStruct(values map[string]*chart.Value, name string, value string) (map[string]*chart.Value, error) {
+	if values != nil {
+		// again, it's not exactly clear if/how helm/tiller is using config.Values,
+		// so i'm just kind of assuming that the key should be the full value
+		// path string and assigning as such. This may not end up being correct,
+		// but given that config.Values is map[string]*Value, i can't possibly
+		// how it could be nested.
+		values[name] = &chart.Value{
+			Value: value,
+		}
+	}
+	return values, nil
+}
+
+func updateValueRaw(raw string, name string, value string) (string, error) {
+	var y map[interface{}]interface{}
+	err := yaml.Unmarshal([]byte(raw), &y)
+	if err != nil {
+		return "", err
+	}
+
+	path := strings.Split(name, ".")
+	y, err = updateNestedMapString(y, path, value)
+	if err != nil {
+		return "", err
+	}
+
+	r, err := yaml.Marshal(y)
+	if err != nil {
+		return "", err
+	}
+	return string(r[:]), nil
+}
+
+func updateNestedMapString(m map[interface{}]interface{}, path []string, value string) (map[interface{}]interface{}, error) {
+	var err error
+	if len(path) < 1 {
+		return m, nil
+	}
+	log.Debugf("%s", path[0])
+	key := path[0]
+	_, exists := m[key]
+	switch true {
+	case exists && len(path) == 1:
+		m[key] = value
+		return m, nil
+	case exists:
+		m[key], err = updateNestedMapString(m[key].(map[interface{}]interface{}), path[1:], value)
+		return m, err
+	default:
+		return nil, fmt.Errorf("Key %s does not exist", key)
+	}
 }
 
 // func (m *Manager) waitForReleaseToDeploy(rls *lmhelm.Release) error {
