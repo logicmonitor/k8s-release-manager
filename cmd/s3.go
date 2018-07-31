@@ -52,12 +52,14 @@ var s3ExportCmd = &cobra.Command{
 		}
 
 		// Start the exporter.
-		go export.Run() // nolint: errcheck
-	},
-	PostRun: func(cmd *cobra.Command, args []string) {
-		// Health check.
-		http.HandleFunc("/healthz", healthz.HandleFunc)
-		log.Fatal(http.ListenAndServe(":8080", nil))
+		if daemon {
+			go export.Run() // nolint: errcheck
+			// Health check.
+			http.HandleFunc("/healthz", healthz.HandleFunc)
+			log.Fatal(http.ListenAndServe(":8080", nil))
+		} else {
+			export.Run()
+		}
 	},
 }
 
