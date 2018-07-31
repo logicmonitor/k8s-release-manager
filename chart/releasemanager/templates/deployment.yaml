@@ -52,10 +52,6 @@ spec:
           - --namespace
           - {{ .Values.tillerNamespace }}
 {{- end }}
-{{- if .Values.tillerHost }}
-          - --tiller-host
-          - {{ .Values.tillerHost }}
-{{- end }}
 {{- if and .Values.s3 (eq .Values.backend.type "s3") }}
           - --region
           - {{ required "A valid .Values.s3.region entry required!" .Values.s3.region }}

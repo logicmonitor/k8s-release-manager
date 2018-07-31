@@ -1,62 +1,87 @@
 package client
 
 import (
-	v1alpha1 "k8s.io/api/admissionregistration/v1alpha1"
-	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	clientset "k8s.io/client-go/kubernetes"
+	"strings"
+
+	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
+	"github.com/logicmonitor/k8s-release-manager/pkg/utilities"
+	"github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Client represents the Chart Manager client.
-type Client struct {
-	Clientset              *clientset.Clientset
-	RESTClient             *rest.RESTClient
-	APIExtensionsClientset *apiextensionsclientset.Clientset
-}
-
-// NewForConfig instantiates and returns the client and scheme.
-func NewForConfig(cfg *rest.Config) (*Client, *runtime.Scheme, error) {
-	s := runtime.NewScheme()
-	c, err := initClients(cfg, s)
+// KubernetesClient returns a kubernetes clientset from the given configuration
+func KubernetesClient(c *config.ClusterConfig) (*kubernetes.Clientset, *rest.Config, error) {
+	clusterConfig, err := clusterConfig(c)
 	if err != nil {
 		return nil, nil, err
 	}
-	return c, s, nil
+
+	log.Debugf("Creating kubernetes client")
+	client, err := kubernetes.NewForConfig(clusterConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	return client, clusterConfig, nil
 }
 
-func initClients(cfg *rest.Config, s *runtime.Scheme) (*Client, error) {
-	client, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		return nil, err
+func clusterConfig(c *config.ClusterConfig) (*rest.Config, error) {
+	kubeConfig := kubeConfig(c)
+	// if kubeconfig set, use client config
+	if kubeConfig != "" {
+		c.KubeConfig = kubeConfig
+		return localConfig(c)
 	}
 
-	restconfig := restConfig(cfg, s)
-	restclient, err := rest.RESTClientFor(&restconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	// Instantiate the Kubernetes API extensions client.
-	apiextensionsclient, err := apiextensionsclientset.NewForConfig(&restconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	c := &Client{
-		Clientset:              client,
-		RESTClient:             restclient,
-		APIExtensionsClientset: apiextensionsclient,
-	}
-	return c, nil
+	// else, use in cluster config
+	log.Debugf("Using in-cluster config")
+	return rest.InClusterConfig()
 }
 
-func restConfig(cfg *rest.Config, s *runtime.Scheme) rest.Config {
-	config := *cfg
-	config.GroupVersion = &v1alpha1.SchemeGroupVersion
-	config.APIPath = "/apis"
-	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(s)}
-	return config
+func localConfig(c *config.ClusterConfig) (*rest.Config, error) {
+
+	// rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules := &clientcmd.ClientConfigLoadingRules{
+		DefaultClientConfig: &clientcmd.DefaultClientConfig,
+	}
+	overrides := &clientcmd.ConfigOverrides{}
+
+	if c.KubeContext != "" {
+		log.Debugf("Using kube context %s", c.KubeContext)
+		overrides.CurrentContext = c.KubeContext
+	}
+
+	log.Debugf("Using kubeconfig %s", c.KubeConfig)
+	rules.ExplicitPath = c.KubeConfig
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+}
+
+func kubeConfig(c *config.ClusterConfig) string {
+	if c.KubeConfig != "" {
+		path, err := homedir.Expand(c.KubeConfig)
+		if err != nil {
+			log.Warnf("Unable to expand home directory")
+			return c.KubeConfig
+		}
+		return path
+	}
+
+	defaultPath := defaultKubeConfigPath()
+	if utilities.FileExists(defaultPath) {
+		return defaultPath
+	}
+	return ""
+}
+
+func defaultKubeConfigPath() string {
+	home, err := homedir.Dir()
+	if err != nil {
+		log.Errorf("Unable to determine home directory")
+		return ""
+	}
+	return strings.Join([]string{home, constants.DefaultKubeConfigDir, constants.DefaultKubeConfig}, "/")
 }

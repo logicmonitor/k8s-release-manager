@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -13,9 +14,10 @@ var rlsmgrconfig *config.Config
 var debug bool
 var dryRun bool
 var verbose bool
+var kubeConfig string
+var kubeContext string
 var storagePath string
 var releaseName string
-var tillerHost string
 var tillerNamespace string
 
 // RootCmd represents the base command when called without any subcommands
@@ -44,6 +46,14 @@ blue/green cluster deployments and disaster recovery scenarios.`,
 		rlsmgrconfig.Backend = &config.BackendConfig{
 			StoragePath: storagePath,
 		}
+		// check env for KUBECONFIG
+		if kubeConfig == "" && os.Getenv(constants.EnvKubeConfig) != "" {
+			kubeConfig = os.Getenv(constants.EnvKubeConfig)
+		}
+		rlsmgrconfig.ClusterConfig = &config.ClusterConfig{
+			KubeConfig:  kubeConfig,
+			KubeContext: kubeContext,
+		}
 	},
 }
 
@@ -61,7 +71,8 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "Debug output.")
 	RootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Don't modify any state in the remote backend.")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output. Generally, this will print chart contents to stdout before performing an operation.")
+	RootCmd.PersistentFlags().StringVarP(&kubeConfig, "kubeconfig", "", "", "Path to local kubecontext for interfacing with Helm.")
+	RootCmd.PersistentFlags().StringVarP(&kubeContext, "kubecontext", "", "", "Kube context for interfacing with Helm.")
 	RootCmd.PersistentFlags().StringVarP(&storagePath, "path", "", "", "Required. Path for storing releases in the storage backend.")
-	RootCmd.PersistentFlags().StringVarP(&tillerHost, "tiller-host", "", "", "The tiller hostname and port.SZtdhxj f√ ")
 	RootCmd.PersistentFlags().StringVarP(&tillerNamespace, "namespace", "n", "kube-system", "The namespace where Tiller is deployed.")
 }

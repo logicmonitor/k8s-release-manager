@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -15,20 +16,21 @@ import (
 
 // Client represents the LM helm client wrapper
 type Client struct {
-	Helm         *helm.Client
-	rlsmgrconfig *config.Config
-	restConfig   *rest.Config
-	settings     helm_env.EnvSettings
+	Helm             *helm.Client
+	helmConfig       *config.HelmConfig
+	kubernetesClient *kubernetes.Clientset
+	kubernetesConfig *rest.Config
+	settings         helm_env.EnvSettings
 }
 
 // Init initializes the LM helm wrapper struct
-func (c *Client) Init(rlsmgrconfig *config.Config, config *rest.Config) error {
-	// Instantiate the Helm client
-	c.rlsmgrconfig = rlsmgrconfig
-	c.settings = c.getHelmSettings()
-	c.restConfig = config
-
+func (c *Client) Init(helmConfig *config.HelmConfig, kubernetesClient *kubernetes.Clientset, kubernetesConfig *rest.Config) error {
 	var err error
+	c.helmConfig = helmConfig
+	c.kubernetesClient = kubernetesClient
+	c.kubernetesConfig = kubernetesConfig
+	c.settings = c.getHelmSettings()
+
 	c.Helm, err = c.newHelmClient()
 	return err
 }
@@ -40,30 +42,20 @@ func (c *Client) newHelmClient() (*helm.Client, error) {
 		return nil, err
 	}
 
-	log.Infof("Using tiller host %s", tillerHost)
-	heClient := helm.NewClient(helm.Host(tillerHost))
-	return heClient, nil
+	log.Debugf("Using tiller host %s", tillerHost)
+	helmClient := helm.NewClient(helm.Host(tillerHost))
+	return helmClient, nil
 }
 
 func (c *Client) tillerHost() (string, error) {
-	if c.settings.TillerHost != "" {
-		return c.settings.TillerHost, nil
-	}
-
-	log.Debugf("Creating kubernetes client")
-	client, err := kubernetes.NewForConfig(c.restConfig)
-	if err != nil {
-		return "", err
-	}
-	log.Debugf("Created kubernetes client")
-
 	log.Debugf("Setting up port forwarding tunnel to tiller")
-	tunnel, err := portforwarder.New(c.settings.TillerNamespace, client, c.restConfig)
+	// log.Fatalf("%s", c.kubernetesConfig.)
+	tunnel, err := portforwarder.New(c.settings.TillerNamespace, c.kubernetesClient, c.kubernetesConfig)
 	if err != nil {
 		return "", err
 	}
-	log.Debugf("Set up port forwarding tunnel to tiller")
 
+	log.Debugf("Set up port forwarding tunnel on 127.0.0.1:%d", tunnel.Local)
 	return fmt.Sprintf("127.0.0.1:%d", tunnel.Local), nil
 }
 
@@ -73,14 +65,17 @@ func (c *Client) HelmSettings() helm_env.EnvSettings {
 }
 
 // Config returns the client application settings
-func (c *Client) Config() *config.Config {
-	return c.rlsmgrconfig
+func (c *Client) Config() *config.HelmConfig {
+	return c.helmConfig
 }
 
 func (c *Client) getHelmSettings() helm_env.EnvSettings {
 	var settings helm_env.EnvSettings
-	settings.TillerHost = c.rlsmgrconfig.Helm.TillerHost
-	settings.TillerNamespace = c.rlsmgrconfig.Helm.TillerNamespace
+
+	settings.TillerNamespace = c.helmConfig.TillerNamespace
+	if settings.TillerNamespace == "" {
+		settings.TillerNamespace = constants.DefaultTillerNamespace
+	}
 	return settings
 }
 

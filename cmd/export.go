@@ -24,7 +24,6 @@ var exportCmd = &cobra.Command{
 		}
 		rlsmgrconfig.Helm = &config.HelmConfig{
 			TillerNamespace: tillerNamespace,
-			TillerHost:      tillerHost,
 		}
 	},
 }

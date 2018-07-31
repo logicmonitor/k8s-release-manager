@@ -11,13 +11,11 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/rest"
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
 // Exporter polls Tiller and exports releases
 type Exporter struct {
-	Client     *client.Client
 	Config     *config.Config
 	HelmClient *lmhelm.Client
 	State      *state.State
@@ -25,27 +23,18 @@ type Exporter struct {
 
 // New instantiates and returns a Exporter and an error if any.
 func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Exporter, error) {
-	// Instantiate the Kubernetes in cluster config.
-	restconfig, err := rest.InClusterConfig()
+	kubernetesClient, kubernetesConfig, err := client.KubernetesClient(rlsmgrconfig.ClusterConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	// Instantiate the client.
-	client, _, err := client.NewForConfig(restconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	// initialize our LM helm wrapper struct
 	helmClient := &lmhelm.Client{}
-	err = helmClient.Init(rlsmgrconfig, restconfig)
+	err = helmClient.Init(rlsmgrconfig.Helm, kubernetesClient, kubernetesConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Exporter{
-		Client:     client,
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
 		State: &state.State{
