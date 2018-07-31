@@ -54,6 +54,9 @@ blue/green cluster deployments and disaster recovery scenarios.`,
 			KubeConfig:  kubeConfig,
 			KubeContext: kubeContext,
 		}
+		rlsmgrconfig.Helm = &config.HelmConfig{
+			TillerNamespace: tillerNamespace,
+		}
 	},
 }
 

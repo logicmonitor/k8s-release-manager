@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
-	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"k8s.io/helm/pkg/proto/hapi/chart"
@@ -36,8 +35,6 @@ Values:
 		ret += fmt.Sprintf("\nChart: %s", r.GetChart().String())
 	}
 	return ret
-}
-
 }
 
 // Filename returns the calculated filename for the specified release
@@ -133,7 +130,7 @@ func updateNestedMapString(m map[interface{}]interface{}, path []string, value s
 	if len(path) < 1 {
 		return m, nil
 	}
-	log.Debugf("%s", path[0])
+
 	key := path[0]
 	_, exists := m[key]
 	switch true {

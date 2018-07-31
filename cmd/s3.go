@@ -7,6 +7,7 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/delete"
 	"github.com/logicmonitor/k8s-release-manager/pkg/export"
 	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
+	"github.com/logicmonitor/k8s-release-manager/pkg/transfer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -77,7 +78,31 @@ var s3ClearCmd = &cobra.Command{
 		}
 
 		// Start the deleter.
-		delete.Run() // nolint: errcheck
+		err = delete.Run()
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	},
+}
+
+var s3TransferCmd = &cobra.Command{
+	Use:   "s3",
+	Short: "Use the s3 backend",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		transferCmd.PreRun(cmd, args)
+		s3PreRun(cmd)
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		transfer, err := transfer.New(rlsmgrconfig, s3Backend)
+		if err != nil {
+			log.Fatalf("Failed to create Release Manager transferer: %v", err)
+		}
+
+		// Start the transferer.
+		err = transfer.Run()
+		if err != nil {
+			log.Errorf("%v", err)
+		}
 	},
 }
 
@@ -90,8 +115,10 @@ func s3Flags(cmd *cobra.Command) {
 }
 
 func init() {
-	s3Flags(s3ExportCmd)
 	s3Flags(s3ClearCmd)
+	s3Flags(s3ExportCmd)
+	s3Flags(s3TransferCmd)
 	exportCmd.AddCommand(s3ExportCmd)
+	transferCmd.AddCommand(s3TransferCmd)
 	clearCmd.AddCommand(s3ClearCmd)
 }

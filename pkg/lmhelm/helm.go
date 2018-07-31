@@ -49,13 +49,10 @@ func (c *Client) newHelmClient() (*helm.Client, error) {
 
 func (c *Client) tillerHost() (string, error) {
 	log.Debugf("Setting up port forwarding tunnel to tiller")
-	// log.Fatalf("%s", c.kubernetesConfig.)
 	tunnel, err := portforwarder.New(c.settings.TillerNamespace, c.kubernetesClient, c.kubernetesConfig)
 	if err != nil {
 		return "", err
 	}
-
-	log.Debugf("Set up port forwarding tunnel on 127.0.0.1:%d", tunnel.Local)
 	return fmt.Sprintf("127.0.0.1:%d", tunnel.Local), nil
 }
 
@@ -88,30 +85,10 @@ func (c *Client) ListInstalledReleases() ([]*rls.Release, error) {
 	return rsp.Releases, nil
 }
 
-// func helmInstall(r *Release vals []byte) (*rls.Release, error) {
-// 	log.Infof("Installing release %s", r.Name())
-// 	rsp, err := r.Client.Helm.InstallReleaseFromChart(chart, r.Chartmgr.ObjectMeta.Namespace, installOpts(r, vals)...)
-// 	if rsp == nil || rsp.Release == nil {
-// 		rls, _ := getInstalledRelease(r)
-// 		if rls != nil {
-// 			return rls, nil
-// 		}
-// 	} else {
-// 		return rsp.Release, nil
-// 	}
-// 	return nil, err
-// }
-
-// func helmUpdate(r *Release, chart *chart.Chart, vals []byte) (*rls.Release, error) {
-// 	log.Infof("Updating release %s", r.Name())
-// 	rsp, err := r.Client.Helm.UpdateReleaseFromChart(r.Name(), chart, updateOpts(r, vals)...)
-// 	if rsp == nil || rsp.Release == nil {
-// 		rls, _ := getInstalledRelease(r)
-// 		if rls != nil {
-// 			return rls, nil
-// 		}
-// 	} else {
-// 		return rsp.Release, nil
-// 	}
-// 	return nil, err
-// }
+// Install a release
+func (c *Client) Install(r *rls.Release) error {
+	vals := []byte(r.GetConfig().GetRaw())
+	log.Debugf("Installing release %s\n", r.GetName())
+	_, err := c.Helm.InstallReleaseFromChart(r.GetChart(), r.GetNamespace(), installOpts(r, vals, c.helmConfig)...)
+	return err
+}

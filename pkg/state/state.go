@@ -59,9 +59,32 @@ func (s *State) Update(releases []*rls.Release) error {
 	return s.delete()
 }
 
+// Read the release manager state from the backend
+func (s *State) Read() (*Info, error) {
+	return s.read()
+}
+
 // Remove the release manager state from the backend
 func (s *State) Remove() error {
 	return s.delete()
+}
+
+// Exists returns true if the remote state file exists
+func (s *State) Exists() (bool, error) {
+	path := s.remoteFilePath(constants.ManagerStateFilename)
+	log.Infof("Check if remote state file %s exists", path)
+	f, err := s.Backend.List(path)
+	if err != nil {
+		return false, err
+	}
+	switch len(f) {
+	case 0:
+		return false, nil
+	case 1:
+		return true, nil
+	default:
+		return false, fmt.Errorf("Found %d state files", len(f))
+	}
 }
 
 func (s *State) updateState(i *Info) (err error) {
@@ -95,7 +118,7 @@ func (s *State) updateState(i *Info) (err error) {
 
 func (s *State) read() (i *Info, err error) {
 	path := s.remoteFilePath(constants.ManagerStateFilename)
-	log.Infof("Reading state from %s", path)
+	log.Debugf("Reading state from %s", path)
 	f, err := s.Backend.Read(path)
 	if err != nil {
 		return nil, err
@@ -160,7 +183,6 @@ func (s *State) DeleteRelease(f string) error {
 
 // StoredReleases returns the list of release structs currently stored in the backend
 func (s *State) StoredReleases() (ret []*rls.Release, err error) {
-	// TODO test
 	filenames, err := s.StoredReleaseNames()
 	if err != nil {
 		return ret, err
@@ -192,7 +214,11 @@ func (s *State) StoredReleaseNames() (ret []string, err error) {
 	}
 
 	// ignore non release files in path, e.g. state, other cruft outside our control
-	r, _ := regexp.Compile(fmt.Sprintf("^.+%s$", constants.ReleaseExtension))
+	r, err := regexp.Compile(fmt.Sprintf("^.+%s$", constants.ReleaseExtension))
+	if err != nil {
+		return nil, err
+	}
+
 	for _, n := range names {
 		if r.MatchString(n) {
 			ret = append(ret, n)
