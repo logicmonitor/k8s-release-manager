@@ -8,7 +8,6 @@ import (
 var daemon bool
 var pollingInterval int
 
-// managecmd represents the manage command
 var exportCmd = &cobra.Command{
 	Use:   "export",
 	Short: "Export installed Helm releases to the configured backend.",

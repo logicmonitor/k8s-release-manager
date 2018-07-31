@@ -5,6 +5,7 @@ import (
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,7 +27,7 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Deleter, error)
 	}, nil
 }
 
-// Run the exporter.
+// Run the deleter.
 func (d *Deleter) Run() error {
 	if d.Config.DryRun {
 		fmt.Println("Dry run. No changes will be made.")
@@ -48,15 +49,13 @@ func (d *Deleter) deleteReleases(releaseNames []string) error {
 	for _, f := range releaseNames {
 		fmt.Printf("Removing release: %s\n", f)
 		switch true {
-		case d.Config.VerboseMode:
+		case d.Config.DryRun:
 			r, e := d.State.ReadRelease(f)
 			if e != nil {
 				log.Errorf("Error retrieving remote release %s: %v", f, e)
-				continue
+			} else {
+				fmt.Printf("%s\n", release.ToString(r, d.Config.VerboseMode))
 			}
-			fmt.Printf("%s\n", r.String())
-			fallthrough
-		case d.Config.DryRun:
 			continue
 		default:
 			e := d.State.DeleteRelease(f)

@@ -20,3 +20,14 @@ const (
 	// ReleaseExtension is the file extension to use when storing releases in the backend
 	ReleaseExtension = "release"
 )
+
+const (
+	// DefaultKubeConfig file name
+	DefaultKubeConfig = "config"
+	// DefaultKubeConfigDir name
+	DefaultKubeConfigDir = ".kube"
+	// DefaultTillerNamespace kube-system
+	DefaultTillerNamespace = "kube-system"
+	//EnvKubeConfig is the default KUBECONFIG env var
+	EnvKubeConfig = "KUBECONFIG"
+)
