@@ -1,6 +1,7 @@
 package export
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -77,11 +78,7 @@ func (m *Exporter) printReleases() error {
 		return err
 	}
 	for _, r := range currentReleases {
-		f, err := release.ToString(r, m.Config.VerboseMode)
-		if err != nil {
-			log.Warnf("%v", err)
-		}
-		log.Debugf(f)
+		fmt.Printf("%s\n", release.ToString(r, m.Config.VerboseMode))
 	}
 	return nil
 }
