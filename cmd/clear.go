@@ -6,7 +6,7 @@ import (
 
 var clearCmd = &cobra.Command{
 	Use:    "clear",
-	Short:  "Deleted all configured releases and state from the backend.",
+	Short:  "Clear all state",
 	PreRun: func(cmd *cobra.Command, args []string) {},
 }
 

@@ -13,8 +13,6 @@ const (
 )
 
 const (
-	// RlsMgrSecretName is the service account name with the proper RBAC policies to allow a rlsmgr to poll Tiller.
-	RlsMgrSecretName = "rlsmgr"
 	//ManagerStateFilename is the filename used to store the manager state in the backend
 	ManagerStateFilename = "rlsmgrstate.json"
 	// ReleaseExtension is the file extension to use when storing releases in the backend

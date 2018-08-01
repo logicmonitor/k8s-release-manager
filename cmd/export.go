@@ -10,7 +10,22 @@ var pollingInterval int
 
 var exportCmd = &cobra.Command{
 	Use:   "export",
-	Short: "Export installed Helm releases to the configured backend.",
+	Short: "Export Helm release state",
+	Long: `
+Release Manager Export will contact Tiller in the configured cluster, collect
+all metadata for each deployed release, and write that metadata to the
+configured backend. This metadata can later be consumed by Release Manager
+import to re-install the saved releases to a different cluster.
+
+Export can also be run in daemon mode to continously update the stored state to
+reflect ongoing changes to the cluster.
+
+// TODO add link to Helm chart/helm chart docs
+
+When running in daemon mode, it is HIGHLY recommended when running to use the
+official Release Manager Helm chart. Failing to specify --release-name or
+use the official Helm chart can lead to multiple Release Manager instances
+writing state to the same backend path, causing conflicts, overwrites chaos.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		valid := validateConfig()
 		if !valid {
@@ -29,8 +44,8 @@ var exportCmd = &cobra.Command{
 }
 
 func init() { // nolint: dupl
-	RootCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Periodically poll Tiller and export releases.")
-	exportCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Frequency in seconds for exporting releases.")
-	exportCmd.PersistentFlags().StringVarP(&releaseName, "release-name", "", "", "The Helm release name used to install the Release Manager. This value is used to prevent configuration conflicts when restoring a saved state to a new cluster.")
+	RootCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Run in daemon mode and periodically export the current state")
+	exportCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Specify, in seconds, how frequently the daemon should export the current state")
+	exportCmd.PersistentFlags().StringVarP(&releaseName, "release-name", "", "", "Specify the Release Manager daemon's Helm release name")
 	RootCmd.AddCommand(exportCmd)
 }

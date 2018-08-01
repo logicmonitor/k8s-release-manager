@@ -51,7 +51,9 @@ func s3PreRun(cmd *cobra.Command) {
 
 var s3ExportCmd = &cobra.Command{
 	Use:   "s3",
-	Short: "Use the s3 backend",
+	Short: "Export state using the S3 backend",
+	Long: `Export state using the S3 backend
+Run: ` + RootCmd.Name() + ` export --help for more information about exporting`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		exportCmd.PreRun(cmd, args)
 		s3PreRun(cmd)
@@ -79,7 +81,10 @@ var s3ExportCmd = &cobra.Command{
 
 var s3ClearCmd = &cobra.Command{ // nolint: dupl
 	Use:   "s3",
-	Short: "Use the s3 backend",
+	Short: "Clear state from the S3 backend",
+	Long: `Clear state from the S3 backend
+Run: ` + RootCmd.Name() + ` clear --help for more information about clearing
+state`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		clearCmd.PreRun(cmd, args)
 		s3PreRun(cmd)
@@ -97,11 +102,13 @@ var s3ClearCmd = &cobra.Command{ // nolint: dupl
 	},
 }
 
-var s3TransferCmd = &cobra.Command{ // nolint: dupl
+var s3importCmd = &cobra.Command{ // nolint: dupl
 	Use:   "s3",
-	Short: "Use the s3 backend",
+	Short: "Import state from the S3 backend",
+	Long: `Import state from the S3 backend
+Run: ` + RootCmd.Name() + ` import --help for more information about importing`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		transferCmd.PreRun(cmd, args)
+		importCmd.PreRun(cmd, args)
 		s3PreRun(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
@@ -118,18 +125,18 @@ var s3TransferCmd = &cobra.Command{ // nolint: dupl
 }
 
 func s3Flags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVarP(&accessKeyID, "accessKeyID", "", "", "AWS access key ID with permissions to access to configured S3 bucket.")
-	cmd.PersistentFlags().StringVarP(&bucket, "bucket", "", "", "The S3 bucket for storing exported releases.")
-	cmd.PersistentFlags().StringVarP(&region, "region", "", "", "The S3 bucket region.")
-	cmd.PersistentFlags().StringVarP(&secretAccessKey, "secretAccessKey", "", "", "AWS secret access key with permissions to access to configured S3 bucket.")
-	cmd.PersistentFlags().StringVarP(&sessionToken, "sessionToken", "", "", "AWS STS session token.")
+	cmd.PersistentFlags().StringVarP(&accessKeyID, "accessKeyID", "", "", "An AWS Access Key ID for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
+	cmd.PersistentFlags().StringVarP(&bucket, "bucket", "", "", "Use this S3 bucket for backend storage")
+	cmd.PersistentFlags().StringVarP(&region, "region", "", "", "The backend S3 bucket's region")
+	cmd.PersistentFlags().StringVarP(&secretAccessKey, "secretAccessKey", "", "", "An AWS Secret Access Key for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
+	cmd.PersistentFlags().StringVarP(&sessionToken, "sessionToken", "", "", "An AWS STS Session Token  for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
 }
 
 func init() {
 	s3Flags(s3ClearCmd)
 	s3Flags(s3ExportCmd)
-	s3Flags(s3TransferCmd)
+	s3Flags(s3importCmd)
 	exportCmd.AddCommand(s3ExportCmd)
-	transferCmd.AddCommand(s3TransferCmd)
+	importCmd.AddCommand(s3importCmd)
 	clearCmd.AddCommand(s3ClearCmd)
 }

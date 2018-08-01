@@ -44,8 +44,6 @@ func clusterConfig(c *config.ClusterConfig) (*rest.Config, error) {
 }
 
 func localConfig(c *config.ClusterConfig) (*rest.Config, error) {
-
-	// rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	rules := &clientcmd.ClientConfigLoadingRules{
 		DefaultClientConfig: &clientcmd.DefaultClientConfig,
 	}
