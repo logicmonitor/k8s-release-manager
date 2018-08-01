@@ -10,15 +10,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Deleter deletes remotely stored release info
-type Deleter struct {
+// Delete deletes remotely stored release info
+type Delete struct {
 	Config *config.Config
 	State  *state.State
 }
 
-// New instantiates and returns a Deleter and an error if any.
-func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Deleter, error) {
-	return &Deleter{
+// New instantiates and returns a Delete and an error if any.
+func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Delete, error) {
+	return &Delete{
 		Config: rlsmgrconfig,
 		State: &state.State{
 			Backend: backend,
@@ -27,8 +27,8 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Deleter, error)
 	}, nil
 }
 
-// Run the deleter.
-func (d *Deleter) Run() error {
+// Run the Delete.
+func (d *Delete) Run() error {
 	if d.Config.DryRun {
 		fmt.Println("Dry run. No changes will be made.")
 	}
@@ -38,14 +38,14 @@ func (d *Deleter) Run() error {
 		log.Fatalf("Error retrieving stored releases: %v", err)
 	}
 
-	err = d.deleteReleases(releaseNames)
+	err = d.Deleteeleases(releaseNames)
 	if err != nil {
 		log.Warnf("%v", err)
 	}
 	return d.deleteState()
 }
 
-func (d *Deleter) deleteReleases(releaseNames []string) error {
+func (d *Delete) Deleteeleases(releaseNames []string) error {
 	for _, f := range releaseNames {
 		fmt.Printf("Removing release: %s\n", f)
 		switch true {
@@ -68,7 +68,7 @@ func (d *Deleter) deleteReleases(releaseNames []string) error {
 	return nil
 }
 
-func (d *Deleter) deleteState() error {
+func (d *Delete) deleteState() error {
 	if d.Config.DryRun {
 		return nil
 	}

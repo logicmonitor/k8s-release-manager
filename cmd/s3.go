@@ -52,14 +52,16 @@ var s3ExportCmd = &cobra.Command{
 			log.Fatalf("Failed to create Release Manager exporter: %v", err)
 		}
 
-		// Start the exporter.
 		if daemon {
 			go export.Run() // nolint: errcheck
 			// Health check.
 			http.HandleFunc("/healthz", healthz.HandleFunc)
 			log.Fatal(http.ListenAndServe(":8080", nil))
 		} else {
-			export.Run()
+			err = export.Run()
+			if err != nil {
+				log.Errorf("%v", err)
+			}
 		}
 	},
 }
@@ -77,7 +79,6 @@ var s3ClearCmd = &cobra.Command{
 			log.Fatalf("Failed to create Release Manager deleter: %v", err)
 		}
 
-		// Start the deleter.
 		err = delete.Run()
 		if err != nil {
 			log.Errorf("%v", err)
@@ -95,10 +96,9 @@ var s3TransferCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		transfer, err := transfer.New(rlsmgrconfig, s3Backend)
 		if err != nil {
-			log.Fatalf("Failed to create Release Manager transferer: %v", err)
+			log.Fatalf("Failed to create Release Manager transfer: %v", err)
 		}
 
-		// Start the transferer.
 		err = transfer.Run()
 		if err != nil {
 			log.Errorf("%v", err)

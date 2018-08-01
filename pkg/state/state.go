@@ -71,7 +71,7 @@ func (s *State) Remove() error {
 
 // Exists returns true if the remote state file exists
 func (s *State) Exists() (bool, error) {
-	path := s.remoteFilePath(constants.ManagerStateFilename)
+	path := s.Path()
 	log.Infof("Check if remote state file %s exists", path)
 	f, err := s.Backend.List(path)
 	if err != nil {
@@ -85,6 +85,11 @@ func (s *State) Exists() (bool, error) {
 	default:
 		return false, fmt.Errorf("Found %d state files", len(f))
 	}
+}
+
+// Path returns the remote path of the state file
+func (s *State) Path() string {
+	return s.remoteFilePath(constants.ManagerStateFilename)
 }
 
 func (s *State) updateState(i *Info) (err error) {
@@ -117,7 +122,7 @@ func (s *State) updateState(i *Info) (err error) {
 }
 
 func (s *State) read() (i *Info, err error) {
-	path := s.remoteFilePath(constants.ManagerStateFilename)
+	path := s.Path()
 	log.Debugf("Reading state from %s", path)
 	f, err := s.Backend.Read(path)
 	if err != nil {
@@ -134,11 +139,11 @@ func (s *State) write(i *Info) error {
 	if err != nil {
 		return err
 	}
-	return s.Backend.Write(s.remoteFilePath(constants.ManagerStateFilename), f)
+	return s.Backend.Write(s.Path(), f)
 }
 
 func (s *State) delete() error {
-	path := s.remoteFilePath(constants.ManagerStateFilename)
+	path := s.Path()
 	log.Debugf("Removing remote state %s", path)
 	return s.Backend.Delete(path)
 }
