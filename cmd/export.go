@@ -28,7 +28,7 @@ var exportCmd = &cobra.Command{
 	},
 }
 
-func init() {
+func init() { // nolint: dupl
 	RootCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Periodically poll Tiller and export releases.")
 	exportCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Frequency in seconds for exporting releases.")
 	exportCmd.PersistentFlags().StringVarP(&releaseName, "release-name", "", "", "The Helm release name used to install the Release Manager. This value is used to prevent configuration conflicts when restoring a saved state to a new cluster.")

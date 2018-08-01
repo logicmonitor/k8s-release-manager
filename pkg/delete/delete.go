@@ -38,14 +38,14 @@ func (d *Delete) Run() error {
 		log.Fatalf("Error retrieving stored releases: %v", err)
 	}
 
-	err = d.Deleteeleases(releaseNames)
+	err = d.deleteReleases(releaseNames)
 	if err != nil {
 		log.Warnf("%v", err)
 	}
 	return d.deleteState()
 }
 
-func (d *Delete) Deleteeleases(releaseNames []string) error {
+func (d *Delete) deleteReleases(releaseNames []string) error {
 	for _, f := range releaseNames {
 		fmt.Printf("Removing release: %s\n", f)
 		switch true {

@@ -66,7 +66,7 @@ var s3ExportCmd = &cobra.Command{
 	},
 }
 
-var s3ClearCmd = &cobra.Command{
+var s3ClearCmd = &cobra.Command{ // nolint: dupl
 	Use:   "s3",
 	Short: "Use the s3 backend",
 	PreRun: func(cmd *cobra.Command, args []string) {
@@ -86,7 +86,7 @@ var s3ClearCmd = &cobra.Command{
 	},
 }
 
-var s3TransferCmd = &cobra.Command{
+var s3TransferCmd = &cobra.Command{ // nolint: dupl
 	Use:   "s3",
 	Short: "Use the s3 backend",
 	PreRun: func(cmd *cobra.Command, args []string) {

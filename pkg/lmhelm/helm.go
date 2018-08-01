@@ -88,7 +88,12 @@ func (c *Client) ListInstalledReleases() ([]*rls.Release, error) {
 // Install a release
 func (c *Client) Install(r *rls.Release) error {
 	vals := []byte(r.GetConfig().GetRaw())
-	log.Debugf("Installing release %s\n", r.GetName())
-	_, err := c.Helm.InstallReleaseFromChart(r.GetChart(), r.GetNamespace(), installOpts(r, vals, c.helmConfig)...)
+	log.Debugf("Installing release %s", r.GetName())
+	rsp, err := c.Helm.InstallReleaseFromChart(r.GetChart(), r.GetNamespace(), installOpts(r, vals, c.helmConfig)...)
+	if rsp != nil {
+		log.Infof("Release %s status %s", rsp.Release.GetName(), rsp.Release.GetInfo().GetStatus().GetCode().String())
+	} else {
+		log.Errorf("%v", err)
+	}
 	return err
 }
