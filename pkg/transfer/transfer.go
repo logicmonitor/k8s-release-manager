@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
@@ -22,42 +21,27 @@ type Transfer struct {
 }
 
 // New instantiates and returns a Deleter and an error if any.
-func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Transfer, error) {
+func New(rlsmgrconfig *config.Config, state *state.State) (*Transfer, error) {
 	helmClient := &lmhelm.Client{}
 
-	// dry run's don't need to interact with tiller, so skip config setup
-	if !rlsmgrconfig.DryRun {
-		kubernetesClient, kubernetesConfig, err := client.KubernetesClient(rlsmgrconfig.ClusterConfig)
-		if err != nil {
-			return nil, err
-		}
+	kubernetesClient, kubernetesConfig, err := client.KubernetesClient(rlsmgrconfig.ClusterConfig)
+	if err != nil {
+		return nil, err
+	}
 
-		err = helmClient.Init(rlsmgrconfig.Helm, kubernetesClient, kubernetesConfig)
-		if err != nil {
-			return nil, err
-		}
+	err = helmClient.Init(rlsmgrconfig.Helm, kubernetesClient, kubernetesConfig)
+	if err != nil {
+		return nil, err
 	}
 	return &Transfer{
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
-		State: &state.State{
-			Backend: backend,
-			Config:  rlsmgrconfig,
-		},
+		State:      state,
 	}, nil
 }
 
 // Run the Transfer.
 func (t *Transfer) Run() error {
-	if t.Config.DryRun {
-		fmt.Println("Dry run. No changes will be made.")
-	}
-
-	err := t.State.Init()
-	if err != nil {
-		return err
-	}
-
 	releases, err := t.State.Releases.StoredReleases()
 	if err != nil {
 		log.Fatalf("Error retrieving stored releases: %v", err)

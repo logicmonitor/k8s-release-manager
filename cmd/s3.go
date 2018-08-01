@@ -7,6 +7,7 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/delete"
 	"github.com/logicmonitor/k8s-release-manager/pkg/export"
 	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
+	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	"github.com/logicmonitor/k8s-release-manager/pkg/transfer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ import (
 
 var accessKeyID string
 var bucket string
+var mgrstate *state.State
 var region string
 var s3Backend backend.Backend
 var secretAccessKey string
@@ -37,6 +39,14 @@ func s3PreRun(cmd *cobra.Command) {
 			Region: region,
 		},
 	}
+	mgrstate = &state.State{
+		Backend: s3Backend,
+		Config:  rlsmgrconfig,
+	}
+	err := mgrstate.Init()
+	if err != nil {
+		log.Fatalf("Failed to initialize state: %v", err)
+	}
 }
 
 var s3ExportCmd = &cobra.Command{
@@ -48,7 +58,7 @@ var s3ExportCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// Instantiate the Release Manager.
-		export, err := export.New(rlsmgrconfig, s3Backend)
+		export, err := export.New(rlsmgrconfig, mgrstate)
 		if err != nil {
 			log.Fatalf("Failed to create Release Manager exporter: %v", err)
 		}
@@ -75,7 +85,7 @@ var s3ClearCmd = &cobra.Command{ // nolint: dupl
 		s3PreRun(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		delete, err := delete.New(rlsmgrconfig, s3Backend)
+		delete, err := delete.New(rlsmgrconfig, mgrstate)
 		if err != nil {
 			log.Fatalf("Failed to create Release Manager deleter: %v", err)
 		}
@@ -95,7 +105,7 @@ var s3TransferCmd = &cobra.Command{ // nolint: dupl
 		s3PreRun(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		transfer, err := transfer.New(rlsmgrconfig, s3Backend)
+		transfer, err := transfer.New(rlsmgrconfig, mgrstate)
 		if err != nil {
 			log.Fatalf("Failed to create Release Manager transfer: %v", err)
 		}

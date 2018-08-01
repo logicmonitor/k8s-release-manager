@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
@@ -23,7 +22,7 @@ type Export struct {
 }
 
 // New instantiates and returns a Export and an error if any.
-func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Export, error) {
+func New(rlsmgrconfig *config.Config, state *state.State) (*Export, error) {
 	kubernetesClient, kubernetesConfig, err := client.KubernetesClient(rlsmgrconfig.ClusterConfig)
 	if err != nil {
 		return nil, err
@@ -38,30 +37,17 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Export, error) 
 	return &Export{
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
-		State: &state.State{
-			Backend: backend,
-			Config:  rlsmgrconfig,
-		},
+		State:      state,
 	}, nil
 }
 
 // Run the Export.
 func (m *Export) Run() error {
-	var run func() error
-	if !m.Config.DryRun {
-		run = m.exportReleases
-	} else {
-		run = m.printReleases
-	}
+	run := m.strategy()
 
-	err := m.State.Init()
-	if err != nil {
-		return err
-	}
-
-	if m.Config.Export.ReleaseName != "" && !m.Config.DryRun {
+	if m.Config.Export.ReleaseName != "" {
 		log.Infof("Cleaning old state")
-		err := m.State.Remove
+		err := m.State.Remove()
 		if err != nil {
 			log.Warnf("Error cleaning up old release manager state: %v", err)
 		}
@@ -79,6 +65,13 @@ func (m *Export) Run() error {
 		}
 		time.Sleep(time.Duration(m.Config.Export.PollingInterval) * time.Second)
 	}
+}
+
+func (m *Export) strategy() func() error {
+	if m.Config.DryRun {
+		return m.printReleases
+	}
+	return m.exportReleases
 }
 
 func (m *Export) printReleases() error {

@@ -3,7 +3,6 @@ package delete
 import (
 	"fmt"
 
-	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
@@ -17,27 +16,15 @@ type Delete struct {
 }
 
 // New instantiates and returns a Delete and an error if any.
-func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Delete, error) {
+func New(rlsmgrconfig *config.Config, state *state.State) (*Delete, error) {
 	return &Delete{
 		Config: rlsmgrconfig,
-		State: &state.State{
-			Backend: backend,
-			Config:  rlsmgrconfig,
-		},
+		State:  state,
 	}, nil
 }
 
 // Run the Delete.
 func (d *Delete) Run() error {
-	if d.Config.DryRun {
-		fmt.Println("Dry run. No changes will be made.")
-	}
-
-	err := d.State.Init()
-	if err != nil {
-		return err
-	}
-
 	releaseNames, err := d.State.Releases.StoredReleaseNames()
 	if err != nil {
 		log.Fatalf("Error retrieving stored releases: %v", err)
@@ -74,8 +61,5 @@ func (d *Delete) deleteReleases(releaseNames []string) error {
 }
 
 func (d *Delete) deleteState() error {
-	if d.Config.DryRun {
-		return nil
-	}
 	return d.State.Remove()
 }

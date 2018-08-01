@@ -28,6 +28,7 @@ func (s *State) Init() error {
 	s.init = false
 	s.Releases = &ReleaseState{
 		Backend: s.Backend,
+		Config:  s.Config,
 	}
 	return nil
 }
@@ -148,10 +149,16 @@ func (s *State) write(i *Info) error {
 	if err != nil {
 		return err
 	}
+	if s.Config.DryRun {
+		return nil
+	}
 	return s.Backend.Write(s.Path(), f)
 }
 
 func (s *State) delete() error {
+	if s.Config.DryRun {
+		return nil
+	}
 	path := s.Path()
 	log.Debugf("Removing remote state %s", path)
 	return s.Backend.Delete(path)

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
+	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/utilities"
@@ -16,6 +17,7 @@ import (
 // ReleaseState is a wrapper for interacting with the stored release info
 type ReleaseState struct {
 	Backend backend.Backend
+	Config  *config.Config
 }
 
 // ReadRelease returns the remote release represented by the specified filename
@@ -37,12 +39,18 @@ func (rs *ReleaseState) WriteRelease(r *rls.Release) error {
 	}
 
 	path := utilities.RemoteFilePath(rs.Backend, release.Filename(r))
+	if rs.Config.DryRun {
+		return nil
+	}
 	log.Debugf("Writing remote release %s", path)
 	return rs.Backend.Write(path, f)
 }
 
 // DeleteRelease deletes the remote release represented by the specified filename
 func (rs *ReleaseState) DeleteRelease(f string) error {
+	if rs.Config.DryRun {
+		return nil
+	}
 	path := utilities.RemoteFilePath(rs.Backend, f)
 	log.Debugf("Removing remote release %s", path)
 	return rs.Backend.Delete(path)
