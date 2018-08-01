@@ -72,13 +72,14 @@ func (t *Transfer) Run() error {
 }
 
 func (t *Transfer) deployReleases(releases []*rls.Release) error {
+	var err error
 	var wg sync.WaitGroup
 	for _, r := range releases {
 		fmt.Printf("Deploying release: %s\n", r.GetName())
 
-		r, err := t.updateManagerRelease(r)
+		r, err = t.updateManagerRelease(r)
 		if err != nil {
-			fmt.Errorf("Unable to update the output path for the new release manager chart. Skipping.")
+			log.Errorf("Unable to update the output path for the new release manager chart. Skipping.")
 			continue
 		}
 
@@ -125,25 +126,9 @@ func (t *Transfer) updateManagerStoragePath(r *rls.Release, path string) (*rls.R
 // overwriting each other's release state.
 // do sanity checks here.
 func (t *Transfer) sanityCheck() error {
-	warn := "This can lead to unexpected results and is probably a mistake. If you really wish to continue, use --force"
-	msg := fmt.Sprintf(
-		"Existing state exists at %s but --new-path wasn't specified.",
-		t.State.Path(),
-	)
-
 	switch true {
 	case t.State != nil && t.Config.Transfer.NewStoragePath == "":
-		// in case the user REALLY wants to proceed anyway
-		if t.Config.Transfer.Force {
-			log.Warnf("%s\n--force specified. Proceeding...", msg)
-			return nil
-		}
-
-		if t.Config.DryRun {
-			fmt.Printf("%s\n%s\n", msg, warn)
-			return nil
-		}
-		return fmt.Errorf("%s\n%s", msg, warn)
+		return t.resolveStateConflict()
 	case t.State == nil && t.Config.Transfer.NewStoragePath != "":
 		log.Warnf("--path specified but no remote state found.")
 		return nil
@@ -152,4 +137,24 @@ func (t *Transfer) sanityCheck() error {
 	default:
 		return fmt.Errorf("Unknown error performing state sanity checks. Failing")
 	}
+}
+
+func (t *Transfer) resolveStateConflict() error {
+	warn := "This can lead to unexpected results and is probably a mistake. If you really wish to continue, use --force"
+	msg := fmt.Sprintf(
+		"Existing state exists at %s but --new-path wasn't specified.",
+		t.State.Path(),
+	)
+
+	// in case the user REALLY wants to proceed anyway
+	if t.Config.Transfer.Force {
+		log.Warnf("%s\n--force specified. Proceeding...", msg)
+		return nil
+	}
+
+	if t.Config.DryRun {
+		fmt.Printf("%s\n%s\n", msg, warn)
+		return nil
+	}
+	return fmt.Errorf("%s\n%s", msg, warn)
 }
