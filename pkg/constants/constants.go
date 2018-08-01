@@ -31,3 +31,8 @@ const (
 	//EnvKubeConfig is the default KUBECONFIG env var
 	EnvKubeConfig = "KUBECONFIG"
 )
+
+const (
+	// ValueStoragePath is the helm --set path for --path
+	ValueStoragePath = "backend.storagePath"
+)

@@ -40,7 +40,7 @@ blue/green cluster deployments and disaster recovery scenarios.`,
 		} else {
 			log.SetLevel(log.WarnLevel)
 		}
-		if debug {
+		if dryRun {
 			fmt.Println("Dry run. No changes will be made.")
 		}
 		rlsmgrconfig.DebugMode = debug

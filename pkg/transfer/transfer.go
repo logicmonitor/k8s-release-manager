@@ -6,6 +6,7 @@ import (
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
@@ -102,8 +103,7 @@ func (t *Transfer) updateManagerRelease(r *rls.Release) (*rls.Release, error) {
 }
 
 func (t *Transfer) updateManagerStoragePath(r *rls.Release, path string) (*rls.Release, error) {
-	// TODO don't use hardcoded path. how do we handle non-official charts? i guess we don't
-	return release.UpdateValue(r, "backend.storagePath", path)
+	return release.UpdateValue(r, constants.ValueStoragePath, path)
 }
 
 // if a state file exists but --new-path wasn't specified, this is probably bad.

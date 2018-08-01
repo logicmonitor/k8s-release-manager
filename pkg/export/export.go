@@ -157,7 +157,7 @@ func (m *Export) deleteReleases(current []*rls.Release, stored []string) {
 }
 
 func (m *Export) currentReleases() ([]*rls.Release, error) {
-	log.Debugf("Finding releases that exist locally.")
+	log.Debugf("Finding installed releases.")
 	return m.HelmClient.ListInstalledReleases()
 }
 
