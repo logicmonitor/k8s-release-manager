@@ -17,7 +17,7 @@ all metadata for each deployed release, and write that metadata to the
 configured backend. This metadata can later be consumed by Release Manager
 import to re-install the saved releases to a different cluster.
 
-Export can also be run in daemon mode to continously update the stored state to
+Export can also be run in daemon mode to continuously update the stored state to
 reflect ongoing changes to the cluster.
 
 // TODO add link to Helm chart/helm chart docs

@@ -14,8 +14,11 @@ var docsCmd = &cobra.Command{
 	Use:   "docs",
 	Short: "Generate the Release Manager documentation",
 	Run: func(cmd *cobra.Command, args []string) {
-		os.MkdirAll(docsPath, os.ModePerm)
-		err := doc.GenMarkdownTree(RootCmd, docsPath)
+		err := os.MkdirAll(docsPath, os.ModePerm)
+		if err != nil {
+			log.Warnf("%v", err)
+		}
+		err = doc.GenMarkdownTree(RootCmd, docsPath)
 		if err != nil {
 			log.Fatal(err)
 		}
