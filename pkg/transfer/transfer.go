@@ -14,15 +14,15 @@ import (
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
-// Transferer deploys remotely stored releases
-type Transferer struct {
+// Transfer deploys remotely stored releases
+type Transfer struct {
 	Config     *config.Config
 	HelmClient *lmhelm.Client
 	State      *state.State
 }
 
 // New instantiates and returns a Deleter and an error if any.
-func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Transferer, error) {
+func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Transfer, error) {
 	helmClient := &lmhelm.Client{}
 
 	// dry run's don't need to interact with tiller, so skip config setup
@@ -38,7 +38,7 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Transferer, err
 		}
 	}
 
-	return &Transferer{
+	return &Transfer{
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
 		State: &state.State{
@@ -48,8 +48,8 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Transferer, err
 	}, nil
 }
 
-// Run the transferer.
-func (t *Transferer) Run() error {
+// Run the Transfer.
+func (t *Transfer) Run() error {
 	if t.Config.DryRun {
 		fmt.Println("Dry run. No changes will be made.")
 	}
@@ -62,18 +62,10 @@ func (t *Transferer) Run() error {
 	return t.deployReleases(releases)
 }
 
-func (t *Transferer) deployReleases(releases []*rls.Release) error {
-	var stateInfo *state.Info
-	stateExists, err := t.State.Exists()
+func (t *Transfer) deployReleases(releases []*rls.Release) error {
+	stateInfo, err := t.stateInfo()
 	if err != nil {
-		log.Warnf("%v", err)
-	}
-
-	if stateExists {
-		stateInfo, err = t.State.Read()
-		if err != nil {
-			log.Errorf("Error retrieving remote state: ")
-		}
+		return err
 	}
 
 	var wg sync.WaitGroup
@@ -81,7 +73,7 @@ func (t *Transferer) deployReleases(releases []*rls.Release) error {
 		fmt.Printf("Deploying release: %s\n", r.GetName())
 
 		// check if this release is managing the release manager
-		if t.Config.Transfer.NewStoragePath != "" && stateExists && stateInfo != nil && r.GetName() == stateInfo.ReleaseName {
+		if t.Config.Transfer.NewStoragePath != "" && stateInfo != nil && r.GetName() == stateInfo.ReleaseName {
 			r, err = t.updateManagerStoragePath(r, t.Config.Transfer.NewStoragePath)
 			if err != nil {
 				log.Errorf("Unable to update the output path for the new release manager chart. Skipping.")
@@ -107,7 +99,47 @@ func (t *Transferer) deployReleases(releases []*rls.Release) error {
 	return nil
 }
 
-func (t *Transferer) updateManagerStoragePath(r *rls.Release, path string) (*rls.Release, error) {
+func (t *Transfer) updateManagerStoragePath(r *rls.Release, path string) (*rls.Release, error) {
 	// TODO don't use hardcoded path. how do we handle non-official charts? i guess we don't
 	return release.UpdateValue(r, "backend.storagePath", path)
+}
+
+func (t *Transfer) stateInfo() (*state.Info, error) {
+	stateExists, err := t.State.Exists()
+	if err != nil {
+		log.Warnf("%v", err)
+	}
+
+	// if a state file exists but --new-path wasn't specified, this is probably bad.
+	// the newly installed release manager chart will get installed with the same
+	// remote path as the manager previously configured to write to the same remote path.
+	// having two release managers from different clusters writing to the same remote path
+	// is going to cause all sorts of issues, including, but not limited to,
+	// overwriting each other's release state.
+	// do sanity checks here.
+	if stateExists && t.Config.Transfer.NewStoragePath == "" {
+		warn := " This can lead to unexpected results and is probably a mistake. If you really wish to continue, use --force"
+		msg := fmt.Sprintf(
+			"Existing state exists at %s but --new-path wasn't specified.",
+			t.State.Path(),
+		)
+		// in case the user REALLY wants to proceed anyway
+		if t.Config.Transfer.Force {
+			log.Warnf("%s\n--force specified. Proceeding...", msg)
+			return nil, nil
+		}
+
+		if t.Config.DryRun {
+			fmt.Printf("%s\n%s\n", msg, warn)
+			return nil, nil
+		}
+		// fmt.Printf("%s\n%s\n", msg, warn) // TODO DELETE?
+		return nil, fmt.Errorf("%s\n%s", msg, warn)
+	} else if !stateExists && t.Config.Transfer.NewStoragePath != "" {
+		// TODO
+		// warn, prompt continue
+	} else if !stateExists && t.Config.Transfer.NewStoragePath == "" {
+		return nil, nil
+	}
+	return t.State.Read()
 }
