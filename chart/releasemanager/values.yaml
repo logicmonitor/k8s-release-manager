@@ -11,6 +11,7 @@ image:
 
 debug: false
 dryRun: false
+force: false
 verbose: false
 
 backend:

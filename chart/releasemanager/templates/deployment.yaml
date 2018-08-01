@@ -44,6 +44,10 @@ spec:
 {{- if .Values.verbose }}
           - --verbose
 {{- end }}
+{{- if .Values.force }}
+          - --force
+          - {{ .Values.force }}
+{{- end }}
 {{- if .Values.pollingInterval }}
           - --polling-interval
           - {{ .Values.pollingInterval }}
