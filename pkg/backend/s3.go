@@ -11,12 +11,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 )
 
 // S3 implement the Backend interface
 type S3 struct {
-	svc  *s3.S3
-	Opts *S3Opts
+	BackendConfig *config.BackendConfig
+	Opts          *S3Opts
+	svc           *s3.S3
 }
 
 // S3Opts represents the S3 backend configuration options
@@ -45,6 +47,11 @@ func (b *S3) Read(path string) ([]byte, error) {
 		return nil, checkError(err)
 	}
 	return buf.Bytes(), nil
+}
+
+// Config returns the backend's config
+func (b *S3) Config() *config.BackendConfig {
+	return b.BackendConfig
 }
 
 // Writes the contents to the specified path on the backend

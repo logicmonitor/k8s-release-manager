@@ -89,7 +89,7 @@ func (m *Export) exportReleases() error {
 		return err
 	}
 
-	storedReleaseNames, err := m.State.StoredReleaseNames()
+	storedReleaseNames, err := m.State.Releases.StoredReleaseNames()
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (m *Export) updateReleases(current []*rls.Release, stored []string) {
 		wg.Add(1)
 		go func(r *rls.Release) {
 			defer wg.Done()
-			err := m.State.WriteRelease(r)
+			err := m.State.Releases.WriteRelease(r)
 			if err != nil {
 				log.Warnf("%v", err)
 			}
@@ -144,7 +144,7 @@ func (m *Export) deleteReleases(current []*rls.Release, stored []string) {
 		wg.Add(1)
 		go func(f string) {
 			defer wg.Done()
-			err := m.State.DeleteRelease(f)
+			err := m.State.Releases.DeleteRelease(f)
 			if err != nil {
 				log.Warnf("%v", err)
 			}

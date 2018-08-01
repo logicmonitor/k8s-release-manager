@@ -26,6 +26,7 @@ func s3PreRun(cmd *cobra.Command) {
 	}
 
 	s3Backend = &backend.S3{
+		BackendConfig: rlsmgrconfig.Backend,
 		Opts: &backend.S3Opts{
 			Auth: &backend.S3Auth{
 				AccessKeyID:     accessKeyID,

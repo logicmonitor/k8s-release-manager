@@ -33,7 +33,7 @@ func (d *Delete) Run() error {
 		fmt.Println("Dry run. No changes will be made.")
 	}
 
-	releaseNames, err := d.State.StoredReleaseNames()
+	releaseNames, err := d.State.Releases.StoredReleaseNames()
 	if err != nil {
 		log.Fatalf("Error retrieving stored releases: %v", err)
 	}
@@ -50,7 +50,7 @@ func (d *Delete) deleteReleases(releaseNames []string) error {
 		fmt.Printf("Removing release: %s\n", f)
 		switch true {
 		case d.Config.DryRun:
-			r, e := d.State.ReadRelease(f)
+			r, e := d.State.Releases.ReadRelease(f)
 			if e != nil {
 				log.Errorf("Error retrieving remote release %s: %v", f, e)
 			} else {
@@ -58,7 +58,7 @@ func (d *Delete) deleteReleases(releaseNames []string) error {
 			}
 			continue
 		default:
-			e := d.State.DeleteRelease(f)
+			e := d.State.Releases.DeleteRelease(f)
 			if e != nil {
 				log.Errorf("Error removing remote release %s: %v", f, e)
 				continue

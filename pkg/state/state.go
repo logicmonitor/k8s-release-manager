@@ -4,33 +4,37 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"regexp"
-	"sync"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
+	"github.com/logicmonitor/k8s-release-manager/pkg/utilities"
 	log "github.com/sirupsen/logrus"
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
 // State represents the release manager's state information
 type State struct {
-	Backend backend.Backend
-	Config  *config.Config
-	init    bool
+	Backend  backend.Backend
+	Config   *config.Config
+	Info     *Info
+	Releases *ReleaseState
+	init     bool
 }
 
 // Init the release manager state
 func (s *State) Init() error {
 	s.init = false
 	if s.Config.Export.ReleaseName != "" {
-		path := s.remoteFilePath(constants.ManagerStateFilename)
+		path := utilities.RemoteFilePath(s.Backend, constants.ManagerStateFilename)
 		log.Infof("Removing old state %s", path)
 		err := s.Backend.Delete(path)
 		if err != nil {
 			log.Warnf("Error cleaning up old release manager state: %v", err)
+		}
+		s.Releases = &ReleaseState{
+			Backend: s.Backend,
 		}
 	}
 	return nil
@@ -60,8 +64,21 @@ func (s *State) Update(releases []*rls.Release) error {
 }
 
 // Read the release manager state from the backend
-func (s *State) Read() (*Info, error) {
-	return s.read()
+func (s *State) Read() error {
+	exists, err := s.exists()
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+
+	info, err := s.read()
+	if err != nil {
+		return err
+	}
+	s.Info = info
+	return nil
 }
 
 // Remove the release manager state from the backend
@@ -70,7 +87,7 @@ func (s *State) Remove() error {
 }
 
 // Exists returns true if the remote state file exists
-func (s *State) Exists() (bool, error) {
+func (s *State) exists() (bool, error) {
 	path := s.Path()
 	log.Infof("Check if remote state file %s exists", path)
 	f, err := s.Backend.List(path)
@@ -89,7 +106,7 @@ func (s *State) Exists() (bool, error) {
 
 // Path returns the remote path of the state file
 func (s *State) Path() string {
-	return s.remoteFilePath(constants.ManagerStateFilename)
+	return utilities.RemoteFilePath(s.Backend, constants.ManagerStateFilename)
 }
 
 func (s *State) updateState(i *Info) (err error) {
@@ -154,88 +171,4 @@ func (s *State) isManagerRelease(name string) bool {
 		return true
 	}
 	return false
-}
-
-// ReadRelease returns the remote release represented by the specified filename
-func (s *State) ReadRelease(f string) (*rls.Release, error) {
-	path := s.remoteFilePath(f)
-	log.Debugf("Reading remote release %s", path)
-	b, err := s.Backend.Read(path)
-	if err != nil {
-		return nil, err
-	}
-	return release.FromFile(b)
-}
-
-// WriteRelease writes the specified release to the backend
-func (s *State) WriteRelease(r *rls.Release) error {
-	f, err := release.ToFile(r)
-	if err != nil {
-		return err
-	}
-
-	path := s.remoteFilePath(release.Filename(r))
-	log.Debugf("Writing remote release %s", path)
-	return s.Backend.Write(path, f)
-}
-
-// DeleteRelease deletes the remote release represented by the specified filename
-func (s *State) DeleteRelease(f string) error {
-	path := s.remoteFilePath(f)
-	log.Debugf("Removing remote release %s", path)
-	return s.Backend.Delete(path)
-}
-
-// StoredReleases returns the list of release structs currently stored in the backend
-func (s *State) StoredReleases() (ret []*rls.Release, err error) {
-	filenames, err := s.StoredReleaseNames()
-	if err != nil {
-		return ret, err
-	}
-
-	var wg sync.WaitGroup
-	for _, f := range filenames {
-		wg.Add(1)
-		go func(f string, ret *[]*rls.Release) {
-			defer wg.Done()
-			r, e := s.ReadRelease(f)
-			if e != nil {
-				log.Warnf("%v", e)
-				return
-			}
-			*ret = append(*ret, r)
-		}(f, &ret)
-	}
-	wg.Wait()
-	return ret, err
-}
-
-// StoredReleaseNames returns the list of release filenames currently stored in the backend
-func (s *State) StoredReleaseNames() (ret []string, err error) {
-	log.Debugf("Finding releases stored in the backend.")
-	names, err := s.Backend.List(s.Config.Backend.StoragePath)
-	if err != nil {
-		return ret, err
-	}
-
-	// ignore non release files in path, e.g. state, other cruft outside our control
-	r, err := regexp.Compile(fmt.Sprintf("^.+%s$", constants.ReleaseExtension))
-	if err != nil {
-		return nil, err
-	}
-
-	for _, n := range names {
-		if r.MatchString(n) {
-			ret = append(ret, n)
-		}
-	}
-	return ret, err
-}
-
-// remoteFilePath returns the full appropriate backend file path based on the app's configuration
-func (s *State) remoteFilePath(name string) string {
-	if s.Config.Backend.StoragePath == s.Backend.PathSeparator() {
-		return name
-	}
-	return s.Config.Backend.StoragePath + s.Backend.PathSeparator() + name
 }
