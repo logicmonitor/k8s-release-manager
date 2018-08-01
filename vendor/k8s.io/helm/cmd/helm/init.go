@@ -88,6 +88,7 @@ type initCmd struct {
 	kubeClient     kubernetes.Interface
 	serviceAccount string
 	maxHistory     int
+	replicas       int
 	wait           bool
 }
 
@@ -132,6 +133,7 @@ func newInitCmd(out io.Writer) *cobra.Command {
 	f.BoolVar(&i.opts.EnableHostNetwork, "net-host", false, "install Tiller with net=host")
 	f.StringVar(&i.serviceAccount, "service-account", "", "name of service account")
 	f.IntVar(&i.maxHistory, "history-max", 0, "limit the maximum number of revisions saved per release. Use 0 for no limit.")
+	f.IntVar(&i.replicas, "replicas", 1, "amount of tiller instances to run on the cluster")
 
 	f.StringVar(&i.opts.NodeSelectors, "node-selectors", "", "labels to specify the node on which Tiller is installed (app=tiller,helm=rocks)")
 	f.VarP(&i.opts.Output, "output", "o", "skip installation and output Tiller's manifest in specified format (json or yaml)")
@@ -177,6 +179,7 @@ func (i *initCmd) run() error {
 	i.opts.ForceUpgrade = i.forceUpgrade
 	i.opts.ServiceAccount = i.serviceAccount
 	i.opts.MaxHistory = i.maxHistory
+	i.opts.Replicas = i.replicas
 
 	writeYAMLManifest := func(apiVersion, kind, body string, first, last bool) error {
 		w := i.out
@@ -379,11 +382,11 @@ func ensureDefaultRepos(home helmpath.Home, out io.Writer, skipRefresh bool) err
 	if fi, err := os.Stat(repoFile); err != nil {
 		fmt.Fprintf(out, "Creating %s \n", repoFile)
 		f := repo.NewRepoFile()
-		sr, err := initStableRepo(home.CacheIndex(stableRepository), out, skipRefresh)
+		sr, err := initStableRepo(home.CacheIndex(stableRepository), out, skipRefresh, home)
 		if err != nil {
 			return err
 		}
-		lr, err := initLocalRepo(home.LocalRepository(localRepositoryIndexFile), home.CacheIndex("local"), out)
+		lr, err := initLocalRepo(home.LocalRepository(localRepositoryIndexFile), home.CacheIndex("local"), out, home)
 		if err != nil {
 			return err
 		}
@@ -398,7 +401,7 @@ func ensureDefaultRepos(home helmpath.Home, out io.Writer, skipRefresh bool) err
 	return nil
 }
 
-func initStableRepo(cacheFile string, out io.Writer, skipRefresh bool) (*repo.Entry, error) {
+func initStableRepo(cacheFile string, out io.Writer, skipRefresh bool, home helmpath.Home) (*repo.Entry, error) {
 	fmt.Fprintf(out, "Adding %s repo with URL: %s \n", stableRepository, stableRepositoryURL)
 	c := repo.Entry{
 		Name:  stableRepository,
@@ -423,7 +426,7 @@ func initStableRepo(cacheFile string, out io.Writer, skipRefresh bool) (*repo.En
 	return &c, nil
 }
 
-func initLocalRepo(indexFile, cacheFile string, out io.Writer) (*repo.Entry, error) {
+func initLocalRepo(indexFile, cacheFile string, out io.Writer, home helmpath.Home) (*repo.Entry, error) {
 	if fi, err := os.Stat(indexFile); err != nil {
 		fmt.Fprintf(out, "Adding %s repo with URL: %s \n", localRepository, localRepositoryURL)
 		i := repo.NewIndexFile()
@@ -432,7 +435,9 @@ func initLocalRepo(indexFile, cacheFile string, out io.Writer) (*repo.Entry, err
 		}
 
 		//TODO: take this out and replace with helm update functionality
-		createLink(indexFile, cacheFile)
+		if err := createLink(indexFile, cacheFile, home); err != nil {
+			return nil, err
+		}
 	} else if fi.IsDir() {
 		return nil, fmt.Errorf("%s must be a file, not a directory", indexFile)
 	}

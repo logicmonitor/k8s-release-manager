@@ -12,7 +12,7 @@ PKG       := $(shell glide novendor)
 TAGS      :=
 TESTS     := .
 TESTFLAGS :=
-LDFLAGS   :=
+LDFLAGS   := -w -s
 GOFLAGS   :=
 BINDIR    := $(CURDIR)/bin
 BINARIES  := helm tiller
@@ -139,6 +139,5 @@ ifndef HAS_HG
 endif
 	glide install --strip-vendor
 	go build -o bin/protoc-gen-go ./vendor/github.com/golang/protobuf/protoc-gen-go
-	scripts/setup-apimachinery.sh
 
 include versioning.mk
