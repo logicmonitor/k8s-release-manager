@@ -38,5 +38,6 @@ type HelmConfig struct {
 
 //TransferConfig represents configuration options for the backend storage
 type TransferConfig struct {
+	Force          bool
 	NewStoragePath string
 }
