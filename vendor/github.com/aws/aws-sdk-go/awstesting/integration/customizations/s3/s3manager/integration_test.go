@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -51,7 +52,7 @@ func setup() error {
 
 	// Create a bucket for testing
 	bucketName = aws.String(
-		fmt.Sprintf("aws-sdk-go-integration-%s", integration.UniqueID()))
+		fmt.Sprintf("aws-sdk-go-integration-%d-%s", time.Now().Unix(), integration.UniqueID()))
 
 	_, err := svc.CreateBucket(&s3.CreateBucketInput{Bucket: bucketName})
 	if err != nil {

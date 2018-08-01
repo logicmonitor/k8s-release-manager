@@ -7,7 +7,6 @@
     "protocol":"json",
     "serviceAbbreviation":"CloudHSM V2",
     "serviceFullName":"AWS CloudHSM V2",
-    "serviceId":"CloudHSM V2",
     "signatureVersion":"v4",
     "signingName":"cloudhsm",
     "targetPrefix":"BaldrApiService",
@@ -393,7 +392,7 @@
     },
     "EniId":{
       "type":"string",
-      "pattern":"eni-[0-9a-fA-F]{8,17}"
+      "pattern":"eni-[0-9a-fA-F]{8}"
     },
     "ExternalAz":{
       "type":"string",
@@ -521,7 +520,7 @@
     },
     "SubnetId":{
       "type":"string",
-      "pattern":"subnet-[0-9a-fA-F]{8,17}"
+      "pattern":"subnet-[0-9a-fA-F]{8}"
     },
     "SubnetIds":{
       "type":"list",
@@ -577,8 +576,7 @@
     "TagValue":{
       "type":"string",
       "max":256,
-      "min":0,
-      "pattern":"^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"
+      "min":0
     },
     "Timestamp":{"type":"timestamp"},
     "UntagResourceRequest":{

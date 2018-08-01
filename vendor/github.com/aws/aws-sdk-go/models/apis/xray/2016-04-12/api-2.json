@@ -22,19 +22,6 @@
         {"shape":"ThrottledException"}
       ]
     },
-    "GetEncryptionConfig":{
-      "name":"GetEncryptionConfig",
-      "http":{
-        "method":"POST",
-        "requestUri":"/EncryptionConfig"
-      },
-      "input":{"shape":"GetEncryptionConfigRequest"},
-      "output":{"shape":"GetEncryptionConfigResult"},
-      "errors":[
-        {"shape":"InvalidRequestException"},
-        {"shape":"ThrottledException"}
-      ]
-    },
     "GetServiceGraph":{
       "name":"GetServiceGraph",
       "http":{
@@ -69,19 +56,6 @@
       },
       "input":{"shape":"GetTraceSummariesRequest"},
       "output":{"shape":"GetTraceSummariesResult"},
-      "errors":[
-        {"shape":"InvalidRequestException"},
-        {"shape":"ThrottledException"}
-      ]
-    },
-    "PutEncryptionConfig":{
-      "name":"PutEncryptionConfig",
-      "http":{
-        "method":"POST",
-        "requestUri":"/PutEncryptionConfig"
-      },
-      "input":{"shape":"PutEncryptionConfigRequest"},
-      "output":{"shape":"PutEncryptionConfigResult"},
       "errors":[
         {"shape":"InvalidRequestException"},
         {"shape":"ThrottledException"}
@@ -173,10 +147,6 @@
       }
     },
     "Double":{"type":"double"},
-    "EC2InstanceId":{
-      "type":"string",
-      "max":20
-    },
     "Edge":{
       "type":"structure",
       "members":{
@@ -202,34 +172,6 @@
         "TotalResponseTime":{"shape":"NullableDouble"}
       }
     },
-    "EncryptionConfig":{
-      "type":"structure",
-      "members":{
-        "KeyId":{"shape":"String"},
-        "Status":{"shape":"EncryptionStatus"},
-        "Type":{"shape":"EncryptionType"}
-      }
-    },
-    "EncryptionKeyId":{
-      "type":"string",
-      "max":3000,
-      "min":1
-    },
-    "EncryptionStatus":{
-      "type":"string",
-      "enum":[
-        "UPDATING",
-        "ACTIVE"
-      ]
-    },
-    "EncryptionType":{
-      "type":"string",
-      "enum":[
-        "NONE",
-        "KMS"
-      ]
-    },
-    "ErrorMessage":{"type":"string"},
     "ErrorStatistics":{
       "type":"structure",
       "members":{
@@ -248,18 +190,7 @@
     "FilterExpression":{
       "type":"string",
       "max":2000,
-      "min":1
-    },
-    "GetEncryptionConfigRequest":{
-      "type":"structure",
-      "members":{
-      }
-    },
-    "GetEncryptionConfigResult":{
-      "type":"structure",
-      "members":{
-        "EncryptionConfig":{"shape":"EncryptionConfig"}
-      }
+      "min":0
     },
     "GetServiceGraphRequest":{
       "type":"structure",
@@ -331,10 +262,6 @@
         "Count":{"shape":"Integer"}
       }
     },
-    "Hostname":{
-      "type":"string",
-      "max":255
-    },
     "Http":{
       "type":"structure",
       "members":{
@@ -349,7 +276,6 @@
     "InvalidRequestException":{
       "type":"structure",
       "members":{
-        "Message":{"shape":"ErrorMessage"}
       },
       "exception":true
     },
@@ -357,28 +283,14 @@
     "NullableDouble":{"type":"double"},
     "NullableInteger":{"type":"integer"},
     "NullableLong":{"type":"long"},
-    "PutEncryptionConfigRequest":{
-      "type":"structure",
-      "required":["Type"],
-      "members":{
-        "KeyId":{"shape":"EncryptionKeyId"},
-        "Type":{"shape":"EncryptionType"}
-      }
-    },
-    "PutEncryptionConfigResult":{
-      "type":"structure",
-      "members":{
-        "EncryptionConfig":{"shape":"EncryptionConfig"}
-      }
-    },
     "PutTelemetryRecordsRequest":{
       "type":"structure",
       "required":["TelemetryRecords"],
       "members":{
         "TelemetryRecords":{"shape":"TelemetryRecordList"},
-        "EC2InstanceId":{"shape":"EC2InstanceId"},
-        "Hostname":{"shape":"Hostname"},
-        "ResourceARN":{"shape":"ResourceARN"}
+        "EC2InstanceId":{"shape":"String"},
+        "Hostname":{"shape":"String"},
+        "ResourceARN":{"shape":"String"}
       }
     },
     "PutTelemetryRecordsResult":{
@@ -399,10 +311,6 @@
         "UnprocessedTraceSegments":{"shape":"UnprocessedTraceSegmentList"}
       }
     },
-    "ResourceARN":{
-      "type":"string",
-      "max":500
-    },
     "Segment":{
       "type":"structure",
       "members":{
@@ -414,7 +322,11 @@
       "type":"string",
       "min":1
     },
-    "SegmentId":{"type":"string"},
+    "SegmentId":{
+      "type":"string",
+      "max":16,
+      "min":16
+    },
     "SegmentList":{
       "type":"list",
       "member":{"shape":"Segment"}
@@ -471,7 +383,6 @@
     "String":{"type":"string"},
     "TelemetryRecord":{
       "type":"structure",
-      "required":["Timestamp"],
       "members":{
         "Timestamp":{"shape":"Timestamp"},
         "SegmentsReceivedCount":{"shape":"NullableInteger"},
@@ -488,7 +399,6 @@
     "ThrottledException":{
       "type":"structure",
       "members":{
-        "Message":{"shape":"ErrorMessage"}
       },
       "error":{"httpStatusCode":429},
       "exception":true
@@ -505,7 +415,7 @@
     "TraceId":{
       "type":"string",
       "max":35,
-      "min":1
+      "min":35
     },
     "TraceIdList":{
       "type":"list",

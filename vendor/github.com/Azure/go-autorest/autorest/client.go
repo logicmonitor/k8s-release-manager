@@ -35,9 +35,6 @@ const (
 
 	// DefaultRetryAttempts is number of attempts for retry status codes (5xx).
 	DefaultRetryAttempts = 3
-
-	// DefaultRetryDuration is the duration to wait between retries.
-	DefaultRetryDuration = 30 * time.Second
 )
 
 var (
@@ -175,10 +172,9 @@ func NewClientWithUserAgent(ua string) Client {
 		PollingDelay:    DefaultPollingDelay,
 		PollingDuration: DefaultPollingDuration,
 		RetryAttempts:   DefaultRetryAttempts,
-		RetryDuration:   DefaultRetryDuration,
+		RetryDuration:   30 * time.Second,
 		UserAgent:       defaultUserAgent,
 	}
-	c.Sender = c.sender()
 	c.AddToUserAgent(ua)
 	return c
 }
@@ -206,9 +202,9 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, NewErrorWithError(err, "autorest/Client", "Do", nil, "Preparing request failed")
 	}
-
 	resp, err := SendWithSender(c.sender(), r)
-	Respond(resp, c.ByInspecting())
+	Respond(resp,
+		c.ByInspecting())
 	return resp, err
 }
 

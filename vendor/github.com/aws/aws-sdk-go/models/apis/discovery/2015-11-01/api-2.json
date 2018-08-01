@@ -6,7 +6,6 @@
     "jsonVersion":"1.1",
     "protocol":"json",
     "serviceFullName":"AWS Application Discovery Service",
-    "serviceId":"Application Discovery Service",
     "signatureVersion":"v4",
     "targetPrefix":"AWSPoseidonService_V2015_11_01",
     "uid":"discovery-2015-11-01"
@@ -430,7 +429,10 @@
     },
     "ConfigurationTagSet":{
       "type":"list",
-      "member":{"shape":"ConfigurationTag"}
+      "member":{
+        "shape":"ConfigurationTag",
+        "locationName":"item"
+      }
     },
     "Configurations":{
       "type":"list",
@@ -723,7 +725,10 @@
     "FilterValue":{"type":"string"},
     "FilterValues":{
       "type":"list",
-      "member":{"shape":"FilterValue"}
+      "member":{
+        "shape":"FilterValue",
+        "locationName":"item"
+      }
     },
     "Filters":{
       "type":"list",
@@ -925,7 +930,10 @@
     "TagKey":{"type":"string"},
     "TagSet":{
       "type":"list",
-      "member":{"shape":"Tag"}
+      "member":{
+        "shape":"Tag",
+        "locationName":"item"
+      }
     },
     "TagValue":{"type":"string"},
     "TimeStamp":{"type":"timestamp"},

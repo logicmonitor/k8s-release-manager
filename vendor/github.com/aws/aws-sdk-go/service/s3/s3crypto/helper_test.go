@@ -3,8 +3,6 @@ package s3crypto
 import (
 	"bytes"
 	"testing"
-
-	"github.com/aws/aws-sdk-go/internal/sdkio"
 )
 
 func TestBytesReadWriteSeeker_Read(t *testing.T) {
@@ -57,7 +55,7 @@ func TestBytesReadWriteSeeker_Write(t *testing.T) {
 func TestBytesReadWriteSeeker_Seek(t *testing.T) {
 	b := &bytesReadWriteSeeker{[]byte{1, 2, 3}, 0}
 	expected := []byte{2, 3}
-	m, err := b.Seek(1, sdkio.SeekStart)
+	m, err := b.Seek(1, 0)
 
 	if err != nil {
 		t.Errorf("expected no error, but received %v", err)

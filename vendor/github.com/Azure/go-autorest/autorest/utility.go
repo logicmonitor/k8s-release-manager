@@ -20,7 +20,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"reflect"
 	"sort"
@@ -190,15 +189,4 @@ func createQuery(v url.Values) string {
 		}
 	}
 	return buf.String()
-}
-
-// ChangeToGet turns the specified http.Request into a GET (it assumes it wasn't).
-// This is mainly useful for long-running operations that use the Azure-AsyncOperation
-// header, so we change the initial PUT into a GET to retrieve the final result.
-func ChangeToGet(req *http.Request) *http.Request {
-	req.Method = "GET"
-	req.Body = nil
-	req.ContentLength = 0
-	req.Header.Del("Content-Length")
-	return req
 }

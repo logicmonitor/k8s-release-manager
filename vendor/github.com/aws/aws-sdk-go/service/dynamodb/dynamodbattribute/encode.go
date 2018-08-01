@@ -362,10 +362,7 @@ func (e *Encoder) encodeMap(av *dynamodb.AttributeValue, v reflect.Value, fieldT
 func (e *Encoder) encodeSlice(av *dynamodb.AttributeValue, v reflect.Value, fieldTag tag) error {
 	switch v.Type().Elem().Kind() {
 	case reflect.Uint8:
-		slice := reflect.MakeSlice(byteSliceType, v.Len(), v.Len())
-		reflect.Copy(slice, v)
-
-		b := slice.Bytes()
+		b := v.Bytes()
 		if len(b) == 0 {
 			encodeNull(av)
 			return nil
