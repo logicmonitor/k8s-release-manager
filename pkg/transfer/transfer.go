@@ -37,7 +37,6 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Transfer, error
 			return nil, err
 		}
 	}
-
 	return &Transfer{
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
@@ -52,6 +51,11 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Transfer, error
 func (t *Transfer) Run() error {
 	if t.Config.DryRun {
 		fmt.Println("Dry run. No changes will be made.")
+	}
+
+	err := t.State.Init()
+	if err != nil {
+		return err
 	}
 
 	releases, err := t.State.Releases.StoredReleases()
@@ -133,6 +137,8 @@ func (t *Transfer) sanityCheck() error {
 		log.Warnf("--path specified but no remote state found.")
 		return nil
 	case t.State == nil && t.Config.Transfer.NewStoragePath == "":
+		return nil
+	case t.State != nil && t.Config.Transfer.NewStoragePath != "":
 		return nil
 	default:
 		return fmt.Errorf("Unknown error performing state sanity checks. Failing")

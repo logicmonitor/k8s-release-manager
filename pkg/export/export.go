@@ -49,13 +49,22 @@ func New(rlsmgrconfig *config.Config, backend backend.Backend) (*Export, error) 
 func (m *Export) Run() error {
 	var run func() error
 	if !m.Config.DryRun {
-		err := m.State.Init()
-		if err != nil {
-			return err
-		}
 		run = m.exportReleases
 	} else {
 		run = m.printReleases
+	}
+
+	err := m.State.Init()
+	if err != nil {
+		return err
+	}
+
+	if m.Config.Export.ReleaseName != "" && !m.Config.DryRun {
+		log.Infof("Cleaning old state")
+		err := m.State.Remove
+		if err != nil {
+			log.Warnf("Error cleaning up old release manager state: %v", err)
+		}
 	}
 
 	if !m.Config.Export.DaemonMode {

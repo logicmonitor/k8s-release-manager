@@ -26,16 +26,8 @@ type State struct {
 // Init the release manager state
 func (s *State) Init() error {
 	s.init = false
-	if s.Config.Export.ReleaseName != "" {
-		path := utilities.RemoteFilePath(s.Backend, constants.ManagerStateFilename)
-		log.Infof("Removing old state %s", path)
-		err := s.Backend.Delete(path)
-		if err != nil {
-			log.Warnf("Error cleaning up old release manager state: %v", err)
-		}
-		s.Releases = &ReleaseState{
-			Backend: s.Backend,
-		}
+	s.Releases = &ReleaseState{
+		Backend: s.Backend,
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package config
 
 // Config represents the application's configuration
+// codebeat:disable[TOO_MANY_IVARS]
 type Config struct {
 	Backend       *BackendConfig
 	Export        *ExportConfig

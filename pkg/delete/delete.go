@@ -33,6 +33,11 @@ func (d *Delete) Run() error {
 		fmt.Println("Dry run. No changes will be made.")
 	}
 
+	err := d.State.Init()
+	if err != nil {
+		return err
+	}
+
 	releaseNames, err := d.State.Releases.StoredReleaseNames()
 	if err != nil {
 		log.Fatalf("Error retrieving stored releases: %v", err)
