@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: releasemanager
+  repository: logicmonitor/releasemanager
   tag: latest
   pullPolicy: IfNotPresent
 

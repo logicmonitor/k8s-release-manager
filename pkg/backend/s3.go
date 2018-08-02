@@ -30,9 +30,9 @@ type S3Opts struct {
 
 // S3Auth represents the S3 backend authentication configuration options
 type S3Auth struct {
-	AccessKeyID     string `default:""`
-	SecretAccessKey string `default:""`
-	SessionToken    string `default:""`
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
 }
 
 // Read reads the specified file from the backend
