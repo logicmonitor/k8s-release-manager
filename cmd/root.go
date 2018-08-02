@@ -26,7 +26,7 @@ var RootCmd = &cobra.Command{
 	Short: `
 Release Manager is a tool for managing Helm release state`,
 	Long: `
-Release Manager provides functionality for exporting up and importing the
+Release Manager provides functionality for exporting and importing the
 state of Helm releases currently deployed to a Kubernetes cluster. The state
 of the installed releases is saved to a configurable backend for easy
 restoration of previously-deployed releases or for simplified re-deployment of

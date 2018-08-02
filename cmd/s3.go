@@ -126,8 +126,8 @@ Run: ` + RootCmd.Name() + ` import --help for more information about importing`,
 
 func s3Flags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&accessKeyID, "accessKeyID", "", "", "An AWS Access Key ID for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
-	cmd.PersistentFlags().StringVarP(&bucket, "bucket", "", "", "Use this S3 bucket for backend storage")
-	cmd.PersistentFlags().StringVarP(&region, "region", "", "", "The backend S3 bucket's region")
+	cmd.PersistentFlags().StringVarP(&bucket, "bucket", "", "", "Required. Use this S3 bucket for backend storage")
+	cmd.PersistentFlags().StringVarP(&region, "region", "", "us-east-1", "The backend S3 bucket's region")
 	cmd.PersistentFlags().StringVarP(&secretAccessKey, "secretAccessKey", "", "", "An AWS Secret Access Key for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
 	cmd.PersistentFlags().StringVarP(&sessionToken, "sessionToken", "", "", "An AWS STS Session Token  for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
 }
