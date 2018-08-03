@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/spf13/cobra"
 )
 
@@ -17,43 +18,43 @@ func failAuth(cmd *cobra.Command) {
 
 func validateConfig() bool {
 	valid := true
-	if storagePath == "" {
+	if rlsmgrconfig.Backend.StoragePath == "" {
 		fmt.Println("You must specify --path")
 		valid = false
 	}
 	return valid
 }
 
-func validateS3Config() bool {
+func validateS3Config(opts *backend.S3Opts) bool {
 	valid := true
-	if bucket == "" {
+	if opts.Bucket == "" {
 		fmt.Println("You must specify --bucket")
 		valid = false
 	}
-	if region == "" {
+	if opts.Region == "" {
 		fmt.Println("You must specify --region")
 		valid = false
 	}
 	return valid
 }
 
-func validateS3Auth() bool {
-	if !validateS3SessionToken() || !validateS3Tokens() {
+func validateS3Auth(opts *backend.S3Opts) bool {
+	if !validateS3SessionToken(opts) || !validateS3Tokens(opts) {
 		return false
 	}
 	return true
 }
 
-func validateS3Tokens() bool {
-	if (accessKeyID != "" && secretAccessKey == "") || (secretAccessKey != "" && accessKeyID == "") {
+func validateS3Tokens(opts *backend.S3Opts) bool {
+	if (opts.Auth.AccessKeyID != "" && opts.Auth.SecretAccessKey == "") || (opts.Auth.AccessKeyID == "" && opts.Auth.SecretAccessKey != "") {
 		fmt.Println("You must specify both --accessKeyID and --secretAccessKey or neither")
 		return false
 	}
 	return true
 }
 
-func validateS3SessionToken() bool {
-	if sessionToken != "" && (accessKeyID == "" || secretAccessKey == "") {
+func validateS3SessionToken(opts *backend.S3Opts) bool {
+	if opts.Auth.SessionToken != "" && (opts.Auth.AccessKeyID == "" || opts.Auth.SecretAccessKey == "") {
 		fmt.Println("If --sessionToken is specified, you must specify --accessKeyID and --secretAccessKey")
 		return false
 	}

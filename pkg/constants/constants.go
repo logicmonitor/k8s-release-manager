@@ -20,6 +20,8 @@ const (
 )
 
 const (
+	// DefaultConfigPath is the path used to read the config.yaml file from.
+	DefaultConfigPath = "/etc/releasemanager/"
 	// DefaultKubeConfig file name
 	DefaultKubeConfig = "config"
 	// DefaultKubeConfigDir name

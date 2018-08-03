@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -38,5 +41,14 @@ func init() { // nolint: dupl
 	importCmd.PersistentFlags().BoolVarP(&force, "force", "", false, "Skip safety checks")
 	importCmd.PersistentFlags().IntVarP(&releaseTimeoutSec, "release-timeout", "", 300, "The time, in seconds, to wait for an individual Helm release to install")
 	importCmd.PersistentFlags().StringVarP(&newStoragePath, "new-path", "", "", "When installing an exported Release Manager release, update the value of --path")
+	err := bindConfigFlags(importCmd, map[string]string{
+		"force":          "force",
+		"releaseTimeout": "polling-timeout",
+		"newPath":        "new-path",
+	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	RootCmd.AddCommand(importCmd)
 }

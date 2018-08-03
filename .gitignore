@@ -2,6 +2,6 @@ build
 coverage.txt
 run.sh
 notes.txt
-k8s-release-manager
-releasemanager
+/k8s-release-manager
+/releasemanager
 /test.sh

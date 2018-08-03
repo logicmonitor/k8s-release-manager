@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
 	"github.com/logicmonitor/k8s-release-manager/pkg/delete"
@@ -11,37 +13,38 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/transfer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var accessKeyID string
 var bucket string
 var mgrstate *state.State
 var region string
-var s3Backend backend.Backend
 var secretAccessKey string
 var sessionToken string
 
 func s3PreRun(cmd *cobra.Command) {
-	valid := validateS3Auth() && validateS3Config()
+	s3Opts := &backend.S3Opts{
+		Auth: &backend.S3Auth{
+			AccessKeyID:     viper.GetString("accessKeyID"),
+			SecretAccessKey: viper.GetString("secretAccessKey"),
+			SessionToken:    viper.GetString("sessionToken"),
+		},
+		Bucket: viper.GetString("bucket"),
+		Region: viper.GetString("region"),
+	}
+
+	valid := validateS3Auth(s3Opts) && validateS3Config(s3Opts)
 	if !valid {
 		failAuth(cmd)
 	}
 
-	s3Backend = &backend.S3{
-		BackendConfig: rlsmgrconfig.Backend,
-		Opts: &backend.S3Opts{
-			Auth: &backend.S3Auth{
-				AccessKeyID:     accessKeyID,
-				SecretAccessKey: secretAccessKey,
-				SessionToken:    sessionToken,
-			},
-			Bucket: bucket,
-			Region: region,
-		},
-	}
 	mgrstate = &state.State{
-		Backend: s3Backend,
-		Config:  rlsmgrconfig,
+		Backend: &backend.S3{
+			BackendConfig: rlsmgrconfig.Backend,
+			Opts:          s3Opts,
+		},
+		Config: rlsmgrconfig,
 	}
 	err := mgrstate.Init()
 	if err != nil {
@@ -130,6 +133,17 @@ func s3Flags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&region, "region", "", "us-east-1", "The backend S3 bucket's region")
 	cmd.PersistentFlags().StringVarP(&secretAccessKey, "secretAccessKey", "", "", "An AWS Secret Access Key for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
 	cmd.PersistentFlags().StringVarP(&sessionToken, "sessionToken", "", "", "An AWS STS Session Token  for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
+	err := bindConfigFlags(cmd, map[string]string{
+		"accessKeyID":     "accessKeyID",
+		"bucket":          "polling-bucket",
+		"region":          "region",
+		"secretAccessKey": "secretAccessKey",
+		"sessionToken":    "sessionToken",
+	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func init() {

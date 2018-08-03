@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var daemon bool
@@ -33,19 +37,25 @@ writing state to the same backend path, causing conflicts, overwrites chaos.`,
 		}
 
 		rlsmgrconfig.Export = &config.ExportConfig{
-			DaemonMode:      daemon,
-			ReleaseName:     releaseName,
-			PollingInterval: int64(pollingInterval),
-		}
-		rlsmgrconfig.Helm = &config.HelmConfig{
-			TillerNamespace: tillerNamespace,
+			DaemonMode:      viper.GetBool("daemon"),
+			ReleaseName:     viper.GetString("releaseName"),
+			PollingInterval: viper.GetInt64("pollingInterval"),
 		}
 	},
 }
 
 func init() { // nolint: dupl
-	RootCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Run in daemon mode and periodically export the current state")
+	exportCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Run in daemon mode and periodically export the current state")
 	exportCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Specify, in seconds, how frequently the daemon should export the current state")
 	exportCmd.PersistentFlags().StringVarP(&releaseName, "release-name", "", "", "Specify the Release Manager daemon's Helm release name")
+	err := bindConfigFlags(exportCmd, map[string]string{
+		"daemon":          "daemon",
+		"pollingInterval": "polling-interval",
+		"releaseName":     "release-name",
+	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	RootCmd.AddCommand(exportCmd)
 }

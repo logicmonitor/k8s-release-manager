@@ -8,9 +8,11 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var rlsmgrconfig *config.Config
+var cfgFile string
 var debug bool
 var dryRun bool
 var verbose bool
@@ -57,30 +59,34 @@ export releases from the configured cluster while 'import' will deploy releases
 to the configured cluster and 'clear' requires no custer connection whatsoever.
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if debug {
+		rlsmgrconfig.DebugMode = viper.GetBool("debug")
+		rlsmgrconfig.DryRun = viper.GetBool("dryRun")
+		rlsmgrconfig.VerboseMode = viper.GetBool("verbose")
+		rlsmgrconfig.Backend = &config.BackendConfig{
+			StoragePath: viper.GetString("path"),
+		}
+
+		// check env for KUBECONFIG
+		kubeConfig = viper.GetString("kubeconfig")
+		if kubeConfig == "" && os.Getenv(constants.EnvKubeConfig) != "" {
+			kubeConfig = os.Getenv(constants.EnvKubeConfig)
+		}
+
+		rlsmgrconfig.ClusterConfig = &config.ClusterConfig{
+			KubeConfig:  kubeConfig,
+			KubeContext: viper.GetString("kubecontext"),
+		}
+
+		rlsmgrconfig.Helm = &config.HelmConfig{
+			TillerNamespace: viper.GetString("namespace"),
+		}
+		if rlsmgrconfig.DebugMode {
 			log.SetLevel(log.DebugLevel)
 		} else {
 			log.SetLevel(log.WarnLevel)
 		}
-		if dryRun {
+		if rlsmgrconfig.DryRun {
 			fmt.Println("Dry run. No changes will be made.")
-		}
-		rlsmgrconfig.DebugMode = debug
-		rlsmgrconfig.DryRun = dryRun
-		rlsmgrconfig.VerboseMode = verbose
-		rlsmgrconfig.Backend = &config.BackendConfig{
-			StoragePath: storagePath,
-		}
-		// check env for KUBECONFIG
-		if kubeConfig == "" && os.Getenv(constants.EnvKubeConfig) != "" {
-			kubeConfig = os.Getenv(constants.EnvKubeConfig)
-		}
-		rlsmgrconfig.ClusterConfig = &config.ClusterConfig{
-			KubeConfig:  kubeConfig,
-			KubeContext: kubeContext,
-		}
-		rlsmgrconfig.Helm = &config.HelmConfig{
-			TillerNamespace: tillerNamespace,
 		}
 	},
 }
@@ -96,6 +102,8 @@ func Execute() {
 
 func init() {
 	rlsmgrconfig = &config.Config{}
+	cobra.OnInitialize(initConfig)
+	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Set a custom configuration path")
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "", false, "Enable debugging output")
 	RootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Print planned actions without making any modifications")
 	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
@@ -103,4 +111,44 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&kubeContext, "kubecontext", "", "", "Use this kube context, otherwise use the default")
 	RootCmd.PersistentFlags().StringVarP(&storagePath, "path", "", "", "Required. Use this path within the backend for state storage")
 	RootCmd.PersistentFlags().StringVarP(&tillerNamespace, "namespace", "n", "kube-system", "Communicate with the instance of Tiller in this namespace")
+	err := bindConfigFlags(RootCmd, map[string]string{
+		"debug":       "debug",
+		"dryRun":      "dry-run",
+		"verbose":     "verbose",
+		"kubeconfig":  "kubeconfig",
+		"kubecontext": "kubecontext",
+		"path":        "path",
+		"namespace":   "namespace",
+	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func bindConfigFlags(cmd *cobra.Command, mapping map[string]string) (err error) {
+	for k, v := range mapping {
+		err = viper.BindPFlag(k, cmd.PersistentFlags().Lookup(v))
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Search config in home directory with name ".cobra" (without extension).
+		viper.AddConfigPath(constants.DefaultConfigPath)
+		viper.SetConfigName("config")
+	}
+
+	err := viper.ReadInConfig()
+	if err != nil && cfgFile != "" {
+		fmt.Println("Can't read config:", err)
+		os.Exit(1)
+	}
 }
