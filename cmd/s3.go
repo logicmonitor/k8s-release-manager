@@ -135,7 +135,7 @@ func s3Flags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVarP(&sessionToken, "sessionToken", "", "", "An AWS STS Session Token  for accessing the S3 bucket, otherwise use the default AWS credential provider chain")
 	err := bindConfigFlags(cmd, map[string]string{
 		"accessKeyID":     "accessKeyID",
-		"bucket":          "polling-bucket",
+		"bucket":          "bucket",
 		"region":          "region",
 		"secretAccessKey": "secretAccessKey",
 		"sessionToken":    "sessionToken",
