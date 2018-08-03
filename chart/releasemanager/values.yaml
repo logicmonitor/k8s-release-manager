@@ -11,7 +11,7 @@ image:
 
 ## Communicate with the instance of Tiller in this namespace (default "kube-system")
 ##
-namespace: kube-system
+tillerNamespace: kube-system
 
 ## Enable debugging output
 ##

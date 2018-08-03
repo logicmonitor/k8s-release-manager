@@ -25,17 +25,17 @@ releasemanager export s3
 ### Options inherited from parent commands
 
 ```
-      --config string          Set a custom configuration path
-      --daemon                 Run in daemon mode and periodically export the current state
-      --debug                  Enable debugging output
-      --dry-run                Print planned actions without making any modifications
-      --kubeconfig string      Use this kubeconfig path, otherwise use the environment variable KUBECONFIG or ~/.kube/config
-      --kubecontext string     Use this kube context, otherwise use the default
-  -n, --namespace string       Communicate with the instance of Tiller in this namespace (default "kube-system")
-      --path string            Required. Use this path within the backend for state storage
-  -p, --polling-interval int   Specify, in seconds, how frequently the daemon should export the current state (default 30)
-      --release-name string    Specify the Release Manager daemon's Helm release name
-  -v, --verbose                Enable verbose output
+      --config string             Set a custom configuration path
+      --daemon                    Run in daemon mode and periodically export the current state
+      --debug                     Enable debugging output
+      --dry-run                   Print planned actions without making any modifications
+      --kubeconfig string         Use this kubeconfig path, otherwise use the environment variable KUBECONFIG or ~/.kube/config
+      --kubecontext string        Use this kube context, otherwise use the default
+      --path string               Required. Use this path within the backend for state storage
+  -p, --polling-interval int      Specify, in seconds, how frequently the daemon should export the current state (default 30)
+      --release-name string       Specify the Release Manager daemon's Helm release name
+      --tiller-namespace string   Communicate with the instance of Tiller in this namespace (default "kube-system")
+  -v, --verbose                   Enable verbose output
 ```
 
 ### SEE ALSO

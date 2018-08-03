@@ -25,17 +25,17 @@ releasemanager import s3
 ### Options inherited from parent commands
 
 ```
-      --config string         Set a custom configuration path
-      --debug                 Enable debugging output
-      --dry-run               Print planned actions without making any modifications
-      --force                 Skip safety checks
-      --kubeconfig string     Use this kubeconfig path, otherwise use the environment variable KUBECONFIG or ~/.kube/config
-      --kubecontext string    Use this kube context, otherwise use the default
-  -n, --namespace string      Communicate with the instance of Tiller in this namespace (default "kube-system")
-      --new-path string       When installing an exported Release Manager release, update the value of --path
-      --path string           Required. Use this path within the backend for state storage
-      --release-timeout int   The time, in seconds, to wait for an individual Helm release to install (default 300)
-  -v, --verbose               Enable verbose output
+      --config string             Set a custom configuration path
+      --debug                     Enable debugging output
+      --dry-run                   Print planned actions without making any modifications
+      --force                     Skip safety checks
+      --kubeconfig string         Use this kubeconfig path, otherwise use the environment variable KUBECONFIG or ~/.kube/config
+      --kubecontext string        Use this kube context, otherwise use the default
+      --new-path string           When installing an exported Release Manager release, update the value of --path
+      --path string               Required. Use this path within the backend for state storage
+      --release-timeout int       The time, in seconds, to wait for an individual Helm release to install (default 300)
+      --tiller-namespace string   Communicate with the instance of Tiller in this namespace (default "kube-system")
+  -v, --verbose                   Enable verbose output
 ```
 
 ### SEE ALSO

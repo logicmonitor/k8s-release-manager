@@ -78,7 +78,7 @@ to the configured cluster and 'clear' requires no custer connection whatsoever.
 		}
 
 		rlsmgrconfig.Helm = &config.HelmConfig{
-			TillerNamespace: viper.GetString("namespace"),
+			TillerNamespace: viper.GetString("tillerNamespace"),
 		}
 		if rlsmgrconfig.DebugMode {
 			log.SetLevel(log.DebugLevel)
@@ -110,15 +110,15 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&kubeConfig, "kubeconfig", "", "", "Use this kubeconfig path, otherwise use the environment variable KUBECONFIG or ~/.kube/config")
 	RootCmd.PersistentFlags().StringVarP(&kubeContext, "kubecontext", "", "", "Use this kube context, otherwise use the default")
 	RootCmd.PersistentFlags().StringVarP(&storagePath, "path", "", "", "Required. Use this path within the backend for state storage")
-	RootCmd.PersistentFlags().StringVarP(&tillerNamespace, "namespace", "n", "kube-system", "Communicate with the instance of Tiller in this namespace")
+	RootCmd.PersistentFlags().StringVarP(&tillerNamespace, "tiller-namespace", "", "kube-system", "Communicate with the instance of Tiller in this namespace")
 	err := bindConfigFlags(RootCmd, map[string]string{
-		"debug":       "debug",
-		"dryRun":      "dry-run",
-		"verbose":     "verbose",
-		"kubeconfig":  "kubeconfig",
-		"kubecontext": "kubecontext",
-		"path":        "path",
-		"namespace":   "namespace",
+		"debug":           "debug",
+		"dryRun":          "dry-run",
+		"verbose":         "verbose",
+		"kubeconfig":      "kubeconfig",
+		"kubecontext":     "kubecontext",
+		"path":            "path",
+		"tillerNamespace": "tiller-namespace",
 	})
 	if err != nil {
 		fmt.Println(err)
