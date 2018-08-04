@@ -14,7 +14,9 @@ import to re-install the saved releases to a different cluster.
 Export can also be run in daemon mode to continuously update the stored state to
 reflect ongoing changes to the cluster.
 
-// TODO add link to Helm chart/helm chart docs
+Installing releasemanager daemon via Helm chart
+	helm repo add logicmonitor https://logicmonitor.github.io/k8s-helm-charts
+	helm install logicmonitor/releasemanager
 
 When running in daemon mode, it is HIGHLY recommended when running to use the
 official Release Manager Helm chart. Failing to specify --release-name or
