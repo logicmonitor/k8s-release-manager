@@ -26,7 +26,9 @@ reflect ongoing changes to the cluster.
 
 Installing releasemanager daemon via Helm chart
 	helm repo add logicmonitor https://logicmonitor.github.io/k8s-helm-charts
-	helm install logicmonitor/releasemanager
+	helm install logicmonitor/releasemanager \
+    --set path=$BACKEND_STORAGE_PATH \
+  --name releasemanager-$CURRENT_CLUSTER
 
 When running in daemon mode, it is HIGHLY recommended when running to use the
 official Release Manager Helm chart. Failing to specify --release-name or

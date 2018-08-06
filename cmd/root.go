@@ -24,9 +24,8 @@ var tillerNamespace string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use: "releasemanager",
-	Short: `
-Release Manager is a tool for managing Helm release state`,
+	Use:   "releasemanager",
+	Short: "Release Manager is a tool for importing and exporting Helm release state",
 	Long: `
 Release Manager provides functionality for exporting and importing the
 state of Helm releases currently deployed to a Kubernetes cluster. The state
