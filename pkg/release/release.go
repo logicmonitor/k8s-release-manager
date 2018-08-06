@@ -144,20 +144,3 @@ func updateNestedMapString(m map[interface{}]interface{}, path []string, value s
 		return nil, fmt.Errorf("Key %s does not exist", key)
 	}
 }
-
-// func (m *Manager) waitForReleaseToDeploy(rls *lmhelm.Release) error {
-// 	timeout := time.After(2 * time.Minute)
-// 	ticker := time.NewTicker(30 * time.Second)
-
-// 	for c := ticker.C; ; <-c {
-// 		select {
-// 		case <-timeout:
-// 			return errors.New("Timed out waiting for release to deploy")
-// 		default:
-// 			log.Debugf("Checking status of release %s", rls.Name())
-// 			if rls.Deployed() {
-// 				return nil
-// 			}
-// 		}
-// 	}
-// }
