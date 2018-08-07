@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"os"
-
+	"github.com/logicmonitor/k8s-release-manager/pkg/utilities"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -14,7 +13,7 @@ var docsCmd = &cobra.Command{
 	Use:   "docs",
 	Short: "Generate the Release Manager documentation",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := os.MkdirAll(docsPath, os.ModePerm)
+		err := utilities.EnsureDirectory(docsPath)
 		if err != nil {
 			log.Warnf("%v", err)
 		}
