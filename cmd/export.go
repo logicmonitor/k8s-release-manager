@@ -2,10 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/export"
+	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -64,4 +68,24 @@ func init() { // nolint: dupl
 		os.Exit(1)
 	}
 	RootCmd.AddCommand(exportCmd)
+}
+
+func exportRun(cmd *cobra.Command, args []string) {
+	// Instantiate the Release Manager.
+	export, err := export.New(rlsmgrconfig, mgrstate)
+	if err != nil {
+		log.Fatalf("Failed to create Release Manager exporter: %v", err)
+	}
+
+	if daemon {
+		go export.Run() // nolint: errcheck
+		// Health check.
+		http.HandleFunc("/healthz", healthz.HandleFunc)
+		log.Fatal(http.ListenAndServe(":8080", nil))
+	} else {
+		err = export.Run()
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	}
 }

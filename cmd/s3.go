@@ -2,15 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/backend"
-	"github.com/logicmonitor/k8s-release-manager/pkg/delete"
-	"github.com/logicmonitor/k8s-release-manager/pkg/export"
-	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
-	"github.com/logicmonitor/k8s-release-manager/pkg/transfer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,25 +55,7 @@ Run: ` + RootCmd.Name() + ` export --help for more information about exporting`,
 		exportCmd.PreRun(cmd, args)
 		s3PreRun(cmd)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		// Instantiate the Release Manager.
-		export, err := export.New(rlsmgrconfig, mgrstate)
-		if err != nil {
-			log.Fatalf("Failed to create Release Manager exporter: %v", err)
-		}
-
-		if daemon {
-			go export.Run() // nolint: errcheck
-			// Health check.
-			http.HandleFunc("/healthz", healthz.HandleFunc)
-			log.Fatal(http.ListenAndServe(":8080", nil))
-		} else {
-			err = export.Run()
-			if err != nil {
-				log.Errorf("%v", err)
-			}
-		}
-	},
+	Run: exportRun,
 }
 
 var s3ClearCmd = &cobra.Command{ // nolint: dupl
@@ -91,17 +68,7 @@ state`,
 		clearCmd.PreRun(cmd, args)
 		s3PreRun(cmd)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		delete, err := delete.New(rlsmgrconfig, mgrstate)
-		if err != nil {
-			log.Fatalf("Failed to create Release Manager deleter: %v", err)
-		}
-
-		err = delete.Run()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	},
+	Run: clearRun,
 }
 
 var s3ImportCmd = &cobra.Command{ // nolint: dupl
@@ -113,17 +80,7 @@ Run: ` + RootCmd.Name() + ` import --help for more information about importing`,
 		importCmd.PreRun(cmd, args)
 		s3PreRun(cmd)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		transfer, err := transfer.New(rlsmgrconfig, mgrstate)
-		if err != nil {
-			log.Fatalf("Failed to create Release Manager transfer: %v", err)
-		}
-
-		err = transfer.Run()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
-	},
+	Run: importRun,
 }
 
 func s3Flags(cmd *cobra.Command) {
