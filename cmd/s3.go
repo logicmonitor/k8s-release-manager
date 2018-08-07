@@ -51,7 +51,7 @@ func s3PreRun(cmd *cobra.Command) {
 	}
 }
 
-var s3ExportCmd = &cobra.Command{
+var s3ExportCmd = &cobra.Command{ // nolint: dupl
 	Use:   "s3",
 	Short: "Export state using the S3 backend",
 	Long: `Export state using the S3 backend
@@ -104,7 +104,7 @@ state`,
 	},
 }
 
-var s3importCmd = &cobra.Command{ // nolint: dupl
+var s3ImportCmd = &cobra.Command{ // nolint: dupl
 	Use:   "s3",
 	Short: "Import state from the S3 backend",
 	Long: `Import state from the S3 backend
@@ -148,8 +148,8 @@ func s3Flags(cmd *cobra.Command) {
 func init() {
 	s3Flags(s3ClearCmd)
 	s3Flags(s3ExportCmd)
-	s3Flags(s3importCmd)
+	s3Flags(s3ImportCmd)
 	exportCmd.AddCommand(s3ExportCmd)
-	importCmd.AddCommand(s3importCmd)
+	importCmd.AddCommand(s3ImportCmd)
 	clearCmd.AddCommand(s3ClearCmd)
 }
