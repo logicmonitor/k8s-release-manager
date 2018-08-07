@@ -5,11 +5,13 @@ import (
 	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var daemon bool
+var mgrstate *state.State
 var pollingInterval int
 
 var exportCmd = &cobra.Command{

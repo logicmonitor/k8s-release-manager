@@ -18,7 +18,6 @@ import (
 
 var accessKeyID string
 var bucket string
-var mgrstate *state.State
 var region string
 var secretAccessKey string
 var sessionToken string
