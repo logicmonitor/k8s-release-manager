@@ -39,6 +39,11 @@ type S3Auth struct {
 	SessionToken    string
 }
 
+// Init the backend
+func (b *S3) Init() error {
+	return nil
+}
+
 // Read reads the specified file from the backend
 func (b *S3) Read(filename string) ([]byte, error) {
 	buf := aws.NewWriteAtBuffer([]byte{})

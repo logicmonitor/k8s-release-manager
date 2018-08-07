@@ -10,6 +10,7 @@ import (
 type Backend interface {
 	Config() *config.BackendConfig
 	Delete(filename string) error
+	Init() error
 	List() ([]string, error)
 	Read(filename string) ([]byte, error)
 	Write(filename string, data io.Reader) error
