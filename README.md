@@ -4,7 +4,7 @@ will not assist in any issues related to Release Manager.
 ## Release Manager is a tool for importing and exporting Helm release state
 
 -  **Export Helm release state:**
-Release Manager cant contact Tiller in the configured cluster, collect
+Release Manager can contact Tiller in the configured cluster, collect
 all metadata for each deployed release, and write that metadata to the
 configured backend. This metadata can later be consumed by Release Manager
 import to re-install the saved releases to a different cluster.
@@ -23,6 +23,7 @@ backend and install all exported releases to the current Kubernetes cluster.
 Release Manager can interact with multiple release state storage backends.
 Currently supported backends are:
     - S3
+    - Local (**Note:** the local backend is intended for non-production use only)
 
 ## Release Manager Overview
 Release Manager provides functionality for exporting and importing the
