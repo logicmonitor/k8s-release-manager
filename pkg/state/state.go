@@ -9,7 +9,6 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
-	"github.com/logicmonitor/k8s-release-manager/pkg/utilities"
 	log "github.com/sirupsen/logrus"
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
@@ -31,6 +30,11 @@ func (s *State) Init() error {
 		Config:  s.Config,
 	}
 	return nil
+}
+
+// Name returns the state file name
+func (s *State) Name() string {
+	return constants.ManagerStateFilename
 }
 
 // Update updates the release manager state on the backend
@@ -81,13 +85,20 @@ func (s *State) Remove() error {
 
 // Exists returns true if the remote state file exists
 func (s *State) exists() (bool, error) {
-	path := s.Path()
-	log.Infof("Check if remote state file %s exists", path)
-	f, err := s.Backend.List(path)
+	log.Infof("Check if remote state file %s exists", constants.ManagerStateFilename)
+	f, err := s.Backend.List()
 	if err != nil {
 		return false, err
 	}
-	switch len(f) {
+
+	count := 0
+	for _, f := range f {
+		if f == constants.ManagerStateFilename {
+			count++
+		}
+	}
+
+	switch count {
 	case 0:
 		return false, nil
 	case 1:
@@ -95,11 +106,6 @@ func (s *State) exists() (bool, error) {
 	default:
 		return false, fmt.Errorf("Found %d state files", len(f))
 	}
-}
-
-// Path returns the remote path of the state file
-func (s *State) Path() string {
-	return utilities.RemoteFilePath(s.Backend, constants.ManagerStateFilename)
 }
 
 func (s *State) updateState(i *Info) (err error) {
@@ -132,9 +138,8 @@ func (s *State) updateState(i *Info) (err error) {
 }
 
 func (s *State) read() (i *Info, err error) {
-	path := s.Path()
-	log.Debugf("Reading state from %s", path)
-	f, err := s.Backend.Read(path)
+	log.Debugf("Reading state from %s", constants.ManagerStateFilename)
+	f, err := s.Backend.Read(constants.ManagerStateFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -152,16 +157,15 @@ func (s *State) write(i *Info) error {
 	if s.Config.DryRun {
 		return nil
 	}
-	return s.Backend.Write(s.Path(), f)
+	return s.Backend.Write(constants.ManagerStateFilename, f)
 }
 
 func (s *State) delete() error {
 	if s.Config.DryRun {
 		return nil
 	}
-	path := s.Path()
-	log.Debugf("Removing remote state %s", path)
-	return s.Backend.Delete(path)
+	log.Debugf("Removing remote state %s", constants.ManagerStateFilename)
+	return s.Backend.Delete(constants.ManagerStateFilename)
 }
 
 func (s *State) isManagerRelease(name string) bool {

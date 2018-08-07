@@ -9,7 +9,6 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
-	"github.com/logicmonitor/k8s-release-manager/pkg/utilities"
 	log "github.com/sirupsen/logrus"
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
@@ -22,9 +21,8 @@ type ReleaseState struct {
 
 // ReadRelease returns the remote release represented by the specified filename
 func (rs *ReleaseState) ReadRelease(f string) (*rls.Release, error) {
-	path := utilities.RemoteFilePath(rs.Backend, f)
-	log.Debugf("Reading remote release %s", path)
-	b, err := rs.Backend.Read(path)
+	log.Debugf("Reading remote release %s", f)
+	b, err := rs.Backend.Read(f)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +35,11 @@ func (rs *ReleaseState) WriteRelease(r *rls.Release) error {
 	if err != nil {
 		return err
 	}
-
-	path := utilities.RemoteFilePath(rs.Backend, release.Filename(r))
 	if rs.Config.DryRun {
 		return nil
 	}
-	log.Debugf("Writing remote release %s", path)
-	return rs.Backend.Write(path, f)
+	log.Debugf("Writing remote release %s", release.Filename(r))
+	return rs.Backend.Write(release.Filename(r), f)
 }
 
 // DeleteRelease deletes the remote release represented by the specified filename
@@ -51,9 +47,8 @@ func (rs *ReleaseState) DeleteRelease(f string) error {
 	if rs.Config.DryRun {
 		return nil
 	}
-	path := utilities.RemoteFilePath(rs.Backend, f)
-	log.Debugf("Removing remote release %s", path)
-	return rs.Backend.Delete(path)
+	log.Debugf("Removing remote release %s", f)
+	return rs.Backend.Delete(f)
 }
 
 // StoredReleases returns the list of release structs currently stored in the backend
@@ -83,7 +78,7 @@ func (rs *ReleaseState) StoredReleases() (ret []*rls.Release, err error) {
 // StoredReleaseNames returns the list of release filenames currently stored in the backend
 func (rs *ReleaseState) StoredReleaseNames() (ret []string, err error) {
 	log.Debugf("Finding releases stored in the backend.")
-	names, err := rs.Backend.List(rs.Backend.Config().StoragePath)
+	names, err := rs.Backend.List()
 	if err != nil {
 		return ret, err
 	}

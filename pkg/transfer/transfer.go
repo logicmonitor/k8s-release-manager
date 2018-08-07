@@ -132,8 +132,9 @@ func (t *Transfer) sanityCheck() error {
 func (t *Transfer) resolveStateConflict() error {
 	warn := "This can lead to unexpected results and is probably a mistake. If you really wish to continue, use --force"
 	msg := fmt.Sprintf(
-		"Existing state exists at %s but --new-path wasn't specified.",
-		t.State.Path(),
+		"Existing state %s exists in path %s but --new-path wasn't specified.",
+		t.State.Name(),
+		t.Config.Backend.StoragePath,
 	)
 
 	// in case the user REALLY wants to proceed anyway
