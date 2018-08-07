@@ -34,5 +34,5 @@ const (
 
 const (
 	// ValueStoragePath is the helm --set path for --path
-	ValueStoragePath = "backend.storagePath"
+	ValueStoragePath = "backend.path"
 )
