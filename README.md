@@ -59,9 +59,9 @@ to the configured cluster and 'clear' requires no custer connection whatsoever.
 ## Installing via Helm Chart
 Installing releasemanager daemon via Helm chart
 ```
-	helm repo add logicmonitor https://logicmonitor.github.io/k8s-helm-charts
-	helm install logicmonitor/releasemanager \
-    --set path=$BACKEND_STORAGE_PATH \
+helm repo add logicmonitor https://logicmonitor.github.io/k8s-helm-charts
+helm install logicmonitor/releasemanager \
+  --set path=$BACKEND_STORAGE_PATH \
   --name releasemanager-$CURRENT_CLUSTER
 ```
 
