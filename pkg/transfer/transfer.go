@@ -115,14 +115,14 @@ func (t *Transfer) updateManagerStoragePath(r *rls.Release, path string) (*rls.R
 // do sanity checks here.
 func (t *Transfer) sanityCheck() error {
 	switch true {
-	case t.State != nil && t.Config.Transfer.NewStoragePath == "":
+	case t.State.Info != nil && t.Config.Transfer.NewStoragePath == "":
 		return t.resolveStateConflict()
-	case t.State == nil && t.Config.Transfer.NewStoragePath != "":
+	case t.State.Info == nil && t.Config.Transfer.NewStoragePath != "":
 		log.Warnf("--path specified but no remote state found.")
 		return nil
-	case t.State == nil && t.Config.Transfer.NewStoragePath == "":
+	case t.State.Info == nil && t.Config.Transfer.NewStoragePath == "":
 		return nil
-	case t.State != nil && t.Config.Transfer.NewStoragePath != "":
+	case t.State.Info != nil && t.Config.Transfer.NewStoragePath != "":
 		return nil
 	default:
 		return fmt.Errorf("Unknown error performing state sanity checks. Failing")
