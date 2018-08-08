@@ -1,7 +1,6 @@
 package state
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -145,7 +144,7 @@ func (s *State) read() (i *Info, err error) {
 	}
 
 	i = &Info{}
-	err = json.Unmarshal(f, i)
+	err = i.Deserialize(f)
 	return i, err
 }
 

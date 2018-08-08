@@ -8,6 +8,7 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
+	"github.com/logicmonitor/k8s-release-manager/pkg/metrics"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	log "github.com/sirupsen/logrus"
@@ -88,16 +89,21 @@ func (m *Export) printReleases() error {
 func (m *Export) exportReleases() error {
 	currentReleases, err := m.currentReleases()
 	if err != nil {
+		metrics.HelmError()
+		metrics.JobError()
 		return err
 	}
 
 	storedReleaseNames, err := m.State.Releases.StoredReleaseNames()
 	if err != nil {
+		metrics.StateError()
+		metrics.JobError()
 		return err
 	}
 
 	err = m.State.Update(currentReleases)
 	if err != nil {
+		metrics.StateError()
 		log.Warnf("%v", err)
 	}
 	return m.export(currentReleases, storedReleaseNames)
@@ -126,12 +132,17 @@ func (m *Export) updateReleases(current []*rls.Release, stored []string) {
 
 	updatedReleases := updatedReleases(current, stored)
 	for _, r := range updatedReleases {
+		metrics.JobCount()
 		wg.Add(1)
 		go func(r *rls.Release) {
 			defer wg.Done()
 			err := m.State.Releases.WriteRelease(r)
 			if err != nil {
+				metrics.UploadError()
+				metrics.JobError()
 				log.Warnf("%v", err)
+			} else {
+				metrics.UploadCount()
 			}
 		}(r)
 	}
@@ -143,12 +154,17 @@ func (m *Export) deleteReleases(current []*rls.Release, stored []string) {
 
 	deletedReleases := deletedReleases(current, stored)
 	for _, f := range deletedReleases {
+		metrics.JobCount()
 		wg.Add(1)
 		go func(f string) {
 			defer wg.Done()
 			err := m.State.Releases.DeleteRelease(f)
 			if err != nil {
+				metrics.DeleteError()
 				log.Warnf("%v", err)
+			} else {
+				metrics.DeleteCount()
+				metrics.JobError()
 			}
 		}(f)
 	}

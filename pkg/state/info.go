@@ -21,3 +21,8 @@ func (i *Info) Serialize() (io.Reader, error) {
 	}
 	return bytes.NewReader(b), nil
 }
+
+// Deserialize the state
+func (i *Info) Deserialize(f []byte) error {
+	return json.Unmarshal(f, i)
+}
