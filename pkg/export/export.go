@@ -1,19 +1,14 @@
 package export
 
 import (
-	"fmt"
-	"sync"
 	"time"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
-	"github.com/logicmonitor/k8s-release-manager/pkg/metrics"
-	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	log "github.com/sirupsen/logrus"
-	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
 // Export polls Tiller and exports releases
@@ -45,8 +40,6 @@ func New(rlsmgrconfig *config.Config, state *state.State) (*Export, error) {
 
 // Run the Export.
 func (m *Export) Run() error {
-	run := m.strategy()
-
 	if m.Config.Export.ReleaseName != "" {
 		log.Infof("Cleaning old state")
 		err := m.State.Remove()
@@ -57,24 +50,9 @@ func (m *Export) Run() error {
 
 	// if not daemon mode, run once and exit
 	if !m.Config.Export.DaemonMode {
-		return run()
+		return m.strategy()()
 	}
-
-	// start stats server
-	go m.serveStats()
-
-	// daemon mode. run periodically forever
-	for {
-		log.Debugf("Checking Tiller for installed releases")
-		err := run()
-		if err != nil {
-			healthz.IncrementFailure()
-			log.Errorf("%v", err)
-		} else {
-			healthz.ResetFailure()
-		}
-		time.Sleep(time.Duration(m.Config.Export.PollingInterval) * time.Second)
-	}
+	return m.run()
 }
 
 func (m *Export) strategy() func() error {
@@ -84,158 +62,20 @@ func (m *Export) strategy() func() error {
 	return m.exportReleases
 }
 
-func (m *Export) printReleases() error {
-	currentReleases, err := m.currentReleases()
-	if err != nil {
-		return err
-	}
-	for _, r := range currentReleases {
-		fmt.Printf("%s\n", release.ToString(r, m.Config.VerboseMode))
-	}
-	return nil
-}
+func (m *Export) run() error {
+	// start stats server
+	go m.serveStats()
 
-func (m *Export) exportReleases() error {
-	currentReleases, err := m.currentReleases()
-	if err != nil {
-		metrics.HelmError()
-		metrics.JobError()
-		return err
-	}
-
-	storedReleaseNames, err := m.storedReleases()
-	if err != nil {
-		metrics.StateError()
-		metrics.JobError()
-		return err
-	}
-
-	err = m.State.Update(currentReleases)
-	if err != nil {
-		metrics.StateError()
-		log.Warnf("%v", err)
-	}
-	return m.export(currentReleases, storedReleaseNames)
-}
-
-func (m *Export) export(current []*rls.Release, stored []string) error {
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-	go func(current []*rls.Release, stored []string) {
-		defer wg.Done()
-		m.updateReleases(current, stored)
-	}(current, stored)
-
-	go func(current []*rls.Release, stored []string) {
-		defer wg.Done()
-		m.deleteReleases(current, stored)
-	}(current, stored)
-
-	wg.Wait()
-	return nil
-}
-
-func (m *Export) updateReleases(current []*rls.Release, stored []string) {
-	var wg sync.WaitGroup
-
-	updatedReleases := updatedReleases(current, stored)
-	for _, r := range updatedReleases {
-		metrics.JobCount()
-		wg.Add(1)
-		go func(r *rls.Release) {
-			defer wg.Done()
-			err := m.State.Releases.WriteRelease(r)
-			if err != nil {
-				metrics.SaveError()
-				metrics.JobError()
-				log.Warnf("%v", err)
-			} else {
-				metrics.SaveCount()
-			}
-		}(r)
-	}
-	wg.Wait()
-}
-
-func (m *Export) deleteReleases(current []*rls.Release, stored []string) {
-	var wg sync.WaitGroup
-
-	deletedReleases := deletedReleases(current, stored)
-	for _, f := range deletedReleases {
-		metrics.JobCount()
-		wg.Add(1)
-		go func(f string) {
-			defer wg.Done()
-			err := m.State.Releases.DeleteRelease(f)
-			if err != nil {
-				metrics.DeleteError()
-				metrics.JobError()
-				log.Warnf("%v", err)
-			} else {
-				metrics.DeleteCount()
-			}
-		}(f)
-	}
-
-	wg.Wait()
-}
-
-func (m *Export) currentReleases() ([]*rls.Release, error) {
-	log.Debugf("Finding installed releases.")
-	releases, err := m.HelmClient.ListInstalledReleases()
-	if m.Config.DebugMode && err == nil {
-		for _, r := range releases {
-			log.Debugf("Found installed release %s", release.Filename(r))
+	// daemon mode. run periodically forever
+	for {
+		log.Debugf("Checking Tiller for installed releases")
+		err := m.strategy()()
+		if err != nil {
+			healthz.IncrementFailure()
+			log.Errorf("%v", err)
+		} else {
+			healthz.ResetFailure()
 		}
+		time.Sleep(time.Duration(m.Config.Export.PollingInterval) * time.Second)
 	}
-	return releases, err
-}
-
-func (m *Export) storedReleases() ([]string, error) {
-	names, err := m.State.Releases.StoredReleaseNames()
-	if m.Config.DebugMode && err == nil {
-		for _, r := range names {
-			log.Debugf("Found stored release %s", r)
-		}
-	}
-	return names, err
-}
-
-// updated returns the list of current releases that have yet to be stored
-func updatedReleases(current []*rls.Release, stored []string) (ret []*rls.Release) {
-	log.Debugf("Generating list of updated releases.")
-	for _, c := range current {
-		exists := false
-		for _, s := range stored {
-			if s == release.Filename(c) {
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			log.Debugf("Found release to save %s", release.Filename(c))
-			ret = append(ret, c)
-		}
-	}
-	return ret
-}
-
-// deleted returns the filenames of stored releases that not longer exist
-func deletedReleases(current []*rls.Release, stored []string) (ret []string) {
-	log.Debugf("Generating list of deleted releases.")
-	for _, s := range stored {
-		exists := false
-		for _, c := range current {
-			if s == release.Filename(c) {
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			ret = append(ret, s)
-			log.Debugf("Found release to delete %s", s)
-		}
-	}
-	return ret
 }
