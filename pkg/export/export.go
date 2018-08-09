@@ -102,7 +102,7 @@ func (m *Export) exportReleases() error {
 		return err
 	}
 
-	storedReleaseNames, err := m.State.Releases.StoredReleaseNames()
+	storedReleaseNames, err := storedReleases()
 	if err != nil {
 		metrics.StateError()
 		metrics.JobError()
@@ -169,10 +169,10 @@ func (m *Export) deleteReleases(current []*rls.Release, stored []string) {
 			err := m.State.Releases.DeleteRelease(f)
 			if err != nil {
 				metrics.DeleteError()
+				metrics.JobError()
 				log.Warnf("%v", err)
 			} else {
 				metrics.DeleteCount()
-				metrics.JobError()
 			}
 		}(f)
 	}
@@ -182,7 +182,23 @@ func (m *Export) deleteReleases(current []*rls.Release, stored []string) {
 
 func (m *Export) currentReleases() ([]*rls.Release, error) {
 	log.Debugf("Finding installed releases.")
-	return m.HelmClient.ListInstalledReleases()
+	releases, err := m.HelmClient.ListInstalledReleases()
+	if m.Config.DebugMode && err == nil {
+		for _, r := range releases {
+			log.Debugf("Found installed release %s", release.Filename(r))
+		}
+	}
+	return releases, err
+}
+
+func (m *Export) storedReleases() ([]string, err) {
+	names, err := m.State.Releases.StoredReleaseNames()
+	if m.Config.DebugMode && err == nil {
+		for _, r := range names {
+			log.Debugf("Found stored release %s", r)
+		}
+	}
+	return names, err
 }
 
 // updated returns the list of current releases that have yet to be stored
@@ -197,6 +213,7 @@ func updatedReleases(current []*rls.Release, stored []string) (ret []*rls.Releas
 			}
 		}
 		if !exists {
+			log.Debugf("Found release to save %s", release.Filename(c))
 			ret = append(ret, c)
 		}
 	}
@@ -216,6 +233,7 @@ func deletedReleases(current []*rls.Release, stored []string) (ret []string) {
 		}
 		if !exists {
 			ret = append(ret, s)
+			log.Debugf("Found release to delete %s", s)
 		}
 	}
 	return ret
