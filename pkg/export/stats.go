@@ -9,8 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var m *Export
-
 func (m *Export) serveStats() {
 	// Health check.
 	http.HandleFunc("/healthz", healthz.HandleFunc)
@@ -36,7 +34,6 @@ func (m *Export) releasesFunc(w http.ResponseWriter, req *http.Request) { // nol
 		message = []byte(fmt.Sprintf("Error formatting response: %v", err))
 	}
 	respond(w, code, message)
-	return
 }
 
 func respond(w http.ResponseWriter, responseCode int, responseBody []byte) {
