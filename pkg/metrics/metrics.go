@@ -19,11 +19,11 @@ func init() {
 		c.Add("DeleteCount", 0)
 		c.Add("FailedJobs", 0)
 		c.Add("TotalJobs", 0)
-		c.Add("UploadCount", 0)
+		c.Add("SaveCount", 0)
 		e.Add("DeleteErrors", 0)
 		e.Add("HelmErrors", 0)
 		e.Add("StateErrors", 0)
-		e.Add("UploadErrors", 0)
+		e.Add("SaveErrors", 0)
 	})
 	expvar.Publish("goroutines", expvar.Func(goroutines))
 }
@@ -38,9 +38,19 @@ func JobCount() {
 	c.Add("TotalJobs", 1)
 }
 
-// UploadError increments the upload error count by 1.
-func UploadError() {
-	e.Add("UploadErrors", 1)
+// S3Error increments the s3 error count by 1.
+func S3Error() {
+	e.Add("S3Errors", 1)
+}
+
+// LocalError increments the local error count by 1.
+func LocalError() {
+	e.Add("LocalErrors", 1)
+}
+
+// SaveError increments the upload error count by 1.
+func SaveError() {
+	e.Add("SaveErrors", 1)
 }
 
 // DeleteError increments the delete error count by 1.
@@ -50,17 +60,17 @@ func DeleteError() {
 
 // StateError increments the state error count by 1.
 func StateError() {
-	e.Add("UploadErrors", 1)
+	e.Add("StateErrors", 1)
 }
 
 // HelmError increments the helm error count by 1.
 func HelmError() {
-	e.Add("UploadErrors", 1)
+	e.Add("HelmErrors", 1)
 }
 
-// UploadCount increments the upload count by 1.
-func UploadCount() {
-	c.Add("UploadCount", 1)
+// SaveCount increments the upload count by 1.
+func SaveCount() {
+	c.Add("SaveCount", 1)
 }
 
 // DeleteCount increments the delete count by 1.

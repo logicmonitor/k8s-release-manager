@@ -146,11 +146,11 @@ func (m *Export) updateReleases(current []*rls.Release, stored []string) {
 			defer wg.Done()
 			err := m.State.Releases.WriteRelease(r)
 			if err != nil {
-				metrics.UploadError()
+				metrics.SaveError()
 				metrics.JobError()
 				log.Warnf("%v", err)
 			} else {
-				metrics.UploadCount()
+				metrics.SaveCount()
 			}
 		}(r)
 	}

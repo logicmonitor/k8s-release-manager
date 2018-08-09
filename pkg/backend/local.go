@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/metrics"
 	"github.com/logicmonitor/k8s-release-manager/pkg/utilities"
 	log "github.com/sirupsen/logrus"
 )
@@ -41,12 +42,14 @@ func (b *Local) Write(filename string, data io.Reader) error {
 	buf := make([]byte, 1024)
 	f, err := os.Create(b.path(filename))
 	if err != nil {
+		metrics.LocalError()
 		return err
 	}
 
 	defer func() {
 		err := f.Close()
 		if err != nil {
+			metrics.LocalError()
 			log.Errorf("%v", err)
 		}
 	}()
@@ -54,6 +57,7 @@ func (b *Local) Write(filename string, data io.Reader) error {
 	for {
 		n, err := data.Read(buf)
 		if err != nil && err != io.EOF {
+			metrics.LocalError()
 			return err
 		}
 		if n == 0 {
@@ -62,6 +66,7 @@ func (b *Local) Write(filename string, data io.Reader) error {
 
 		_, err = f.Write(buf[:n])
 		if err != nil {
+			metrics.LocalError()
 			return err
 		}
 	}
@@ -70,18 +75,26 @@ func (b *Local) Write(filename string, data io.Reader) error {
 
 // Delete deletes the specified file from the backend
 func (b *Local) Delete(filename string) error {
-	return os.Remove(b.path(filename))
+	err := os.Remove(b.path(filename))
+	if err != nil {
+		metrics.LocalError()
+	}
+	return err
 }
 
 // List lists all files in the specified path on the backend
 func (b *Local) List() (ret []string, err error) {
 	files, err := ioutil.ReadDir(b.path(""))
 	if err != nil {
+		metrics.LocalError()
 		return nil, err
 	}
 
 	for _, file := range files {
 		ret = append(ret, file.Name())
+	}
+	if err != nil {
+		metrics.LocalError()
 	}
 	return ret, err
 }

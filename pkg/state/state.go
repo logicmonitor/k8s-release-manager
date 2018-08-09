@@ -39,10 +39,10 @@ func (s *State) Name() string {
 // Update updates the release manager state on the backend
 func (s *State) Update(releases []*rls.Release) error {
 	if s.Config.Export.ReleaseName == "" {
-		log.Debugf("--release-name not specified. Ignoring state.")
 		return nil
 	}
 
+	log.Debugf("Updating state.")
 	// locate the release managing this application
 	for _, r := range releases {
 		if s.isManagerRelease(r.GetName()) {
