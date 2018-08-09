@@ -102,7 +102,7 @@ func (m *Export) exportReleases() error {
 		return err
 	}
 
-	storedReleaseNames, err := storedReleases()
+	storedReleaseNames, err := m.storedReleases()
 	if err != nil {
 		metrics.StateError()
 		metrics.JobError()
@@ -191,7 +191,7 @@ func (m *Export) currentReleases() ([]*rls.Release, error) {
 	return releases, err
 }
 
-func (m *Export) storedReleases() ([]string, err) {
+func (m *Export) storedReleases() ([]string, error) {
 	names, err := m.State.Releases.StoredReleaseNames()
 	if m.Config.DebugMode && err == nil {
 		for _, r := range names {
