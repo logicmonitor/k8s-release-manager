@@ -68,19 +68,15 @@ func init() { // nolint: dupl
 	RootCmd.AddCommand(exportCmd)
 }
 
-func exportRun(cmd *cobra.Command, args []string) {
+func exportRun(cmd *cobra.Command, args []string) { // nolint: dupl
 	// Instantiate the Release Manager.
 	export, err := export.New(rlsmgrconfig, mgrstate)
 	if err != nil {
 		log.Fatalf("Failed to create Release Manager exporter: %v", err)
 	}
 
-	if daemon {
-		export.Run() // nolint: errcheck
-	} else {
-		err = export.Run()
-		if err != nil {
-			log.Errorf("%v", err)
-		}
+	err = export.Run()
+	if err != nil {
+		log.Errorf("%v", err)
 	}
 }

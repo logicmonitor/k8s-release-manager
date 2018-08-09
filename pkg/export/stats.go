@@ -12,14 +12,13 @@ import (
 var m *Export
 
 func (m *Export) serveStats() {
-	m = m
 	// Health check.
 	http.HandleFunc("/healthz", healthz.HandleFunc)
 	http.HandleFunc("/releases", m.releasesFunc)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func (m *Export) releasesFunc(w http.ResponseWriter, req *http.Request) {
+func (m *Export) releasesFunc(w http.ResponseWriter, req *http.Request) { // nolint: unparam
 	var message []byte
 	code := http.StatusOK
 
@@ -27,6 +26,8 @@ func (m *Export) releasesFunc(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		code = http.StatusInternalServerError
 		message = []byte(fmt.Sprintf("Error retrieving stored releases: %v", err))
+		respond(w, code, message)
+		return
 	}
 
 	message, err = json.Marshal(releases)
@@ -34,9 +35,13 @@ func (m *Export) releasesFunc(w http.ResponseWriter, req *http.Request) {
 		code = http.StatusInternalServerError
 		message = []byte(fmt.Sprintf("Error formatting response: %v", err))
 	}
+	respond(w, code, message)
+	return
+}
 
-	w.WriteHeader(code)
-	_, err = w.Write([]byte(message))
+func respond(w http.ResponseWriter, responseCode int, responseBody []byte) {
+	w.WriteHeader(responseCode)
+	_, err := w.Write(responseBody)
 	if err != nil {
 		log.Errorf("Failed to write releases: %v", err)
 	}
