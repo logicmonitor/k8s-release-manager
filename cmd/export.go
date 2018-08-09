@@ -2,12 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/export"
-	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -78,10 +76,7 @@ func exportRun(cmd *cobra.Command, args []string) {
 	}
 
 	if daemon {
-		go export.Run() // nolint: errcheck
-		// Health check.
-		http.HandleFunc("/healthz", healthz.HandleFunc)
-		log.Fatal(http.ListenAndServe(":8080", nil))
+		export.Run() // nolint: errcheck
 	} else {
 		err = export.Run()
 		if err != nil {

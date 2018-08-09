@@ -7,6 +7,7 @@ import (
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
+	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
 	"github.com/logicmonitor/k8s-release-manager/pkg/metrics"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
@@ -20,6 +21,7 @@ type Export struct {
 	Config     *config.Config
 	HelmClient *lmhelm.Client
 	State      *state.State
+	failures   int
 }
 
 // New instantiates and returns a Export and an error if any.
@@ -56,13 +58,19 @@ func (m *Export) Run() error {
 
 	if !m.Config.Export.DaemonMode {
 		return run()
+	} else {
+		// start the stats server
+		go m.serveStats()
 	}
 
 	for {
 		log.Debugf("Checking Tiller for installed releases")
 		err := run()
 		if err != nil {
+			healthz.IncrementFailure()
 			log.Errorf("%v", err)
+		} else {
+			healthz.ResetFailure()
 		}
 		time.Sleep(time.Duration(m.Config.Export.PollingInterval) * time.Second)
 	}
