@@ -65,6 +65,26 @@ helm install logicmonitor/releasemanager \
   --name releasemanager-$CURRENT_CLUSTER
 ```
 
+For detailed information about the Helm chart, see the [README](https://github.com/logicmonitor/k8s-helm-charts/blob/master/releasemanager/README.md)
+
+## Viewing installed releases
+When running in daemon mode, the Release Manager exposes an endpoint to view
+the list of releases currently stored in the backend. This endpoint is
+available at /releases.
+
+Note that if the Release Manager is running in-cluster, you'll
+need to expose its service via ingress using --set ingress.hosts={...} when
+installing the Helm chart.
+
+## Retrieving metrics
+When running in daemon mode, the Release Manager exposes an endpoint providing
+monitoring metrics. This endpoint is available at /debug/vars
+at /debug/vars.
+
+Note that if the Release Manager is running in-cluster, you'll
+need to expose its service via ingress using --set ingress.hosts={...} when
+installing the Helm chart.
+
 ## Use cases
 ### Redeploying applications after a blue/green switch
 ### Deploying applications in a disaster recovery scenario
