@@ -56,6 +56,8 @@ only perform actions against a single cluster, i.e. 'export' will
 export releases from the configured cluster while 'import' will deploy releases
 to the configured cluster and 'clear' requires no custer connection whatsoever.
 
+## [Command usage](docs/releasemanager.md)
+
 ## Installing via Helm Chart
 Installing releasemanager daemon via Helm chart
 ```
@@ -99,7 +101,13 @@ this problem, Release Manager makes it easy to take a snapshot of applications
 deployed to the current cluster and redeploy those applications to the new
 cluster.
 
-#### 1. Export the releases currently installed in the source cluster
+#### 1. Install Release Manager locally
+
+```shell
+go get github.com/logicmonitor/k8s-release-manager/cmd/releasemanager
+```
+
+#### 2. Export the releases currently installed in the source cluster
 
 ```shell
 releasemanager export local \
@@ -107,7 +115,7 @@ releasemanager export local \
   --path $LOCAL_RELEASE_STATE_PATH
 ```
 
-#### 2. Deploy the saved releases to the destination cluster
+#### 3. Deploy the saved releases to the destination cluster
 
 ```shell
 releasemanager import local \
@@ -132,9 +140,15 @@ of the applications from the failed cluster to the new cluster.
 helm repo add logicmonitor https://logicmonitor.github.io/k8s-helm-charts
 ```
 
-#### 2. Deploy Release Manager in daemon mode when provisioning a production cluster
+#### 2. Install Release Manager locally
 
+```shell
+go get github.com/logicmonitor/k8s-release-manager/cmd/releasemanager
 ```
+
+#### 3. Deploy Release Manager in daemon mode when provisioning a production cluster
+
+```shell
 helm install logicmonitor/releasemanager \
   --set path=$PROD_CLUSTER_BACKEND_PATH \
   --set s3.bucket=$RELEASE_MANAGER_STATE_BUCKET \
@@ -142,9 +156,9 @@ helm install logicmonitor/releasemanager \
   --name releasemanager-$PROD_CLUSTER_NAME
 ```
 
-#### 3. Provision a failover cluster during a disaster scenario
+#### 4. Provision a failover cluster during a disaster scenario
 
-#### 4. Deploy saved releases to the failover cluster.
+#### 5. Deploy saved releases to the failover cluster.
 
 **NOTE!** Be sure to --new-path. This prevents Release Manager in failover cluster from overwriting the production state
 
