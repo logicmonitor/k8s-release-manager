@@ -85,9 +85,77 @@ Note that if the Release Manager is running in-cluster, you'll
 need to expose its service via ingress using --set ingress.hosts={...} when
 installing the Helm chart.
 
-## Use cases
+## Use case examples
+Release Manager was created with the goal of solving two common cluster
+management problems. These use cases are outlined below along with a general
+instructions for using Release Manager to solve the problem.
+
 ### Redeploying applications after a blue/green switch
+Using blue/green deployments for Kubernetes clusters is a great upgrade
+strategy; however, when a cluster is running dozens or hundreds of application
+deployments supporting several different environments, it can become burdensome
+to redploy all of these applications every time a cluster is upgraded. To solve
+this problem, Release Manager makes it easy to take a snapshot of applications
+deployed to the current cluster and redeploy those applications to the new
+cluster.
+
+#### 1. Export the releases currently installed in the source cluster
+
+```shell
+releasemanager export local \
+  --kubeconfig $SOURCE_CLUSTER_KUBECONFIG \
+  --path $LOCAL_RELEASE_STATE_PATH
+```
+
+#### 2. Deploy the saved releases to the destination cluster
+
+```shell
+releasemanager import local \
+  --kubeconfig $DESTINATION_CLUSTER_KUBECONFIG \
+  --path $LOCAL_RELEASE_STATE_PATH
+```
+
 ### Deploying applications in a disaster recovery scenario
+Some disaster scenarios can result in the need to create a brand new Kubernetes
+cluster for failover. When a cluster is running dozens or hundreds of
+application deployments, it can become burdensome and incur huge time costs to
+redploy all of these applications manually. To solve this problem, Release
+Manager can operate as a long-running process inside your cluster to
+periodically export snapshots of deployed applications to an external storage
+backend. In the event of a disaster recovery operation requiring a cluster
+failover, Release Manager can retrieve the stored state and quickly deploy all
+of the applications from the failed cluster to the new cluster.
+
+#### 1. Add the LogicMonitor Helm repository
+
+```shell
+helm repo add logicmonitor https://logicmonitor.github.io/k8s-helm-charts
+```
+
+#### 2. Deploy Release Manager in daemon mode when provisioning a production cluster
+
+```
+helm install logicmonitor/releasemanager \
+  --set path=$PROD_CLUSTER_BACKEND_PATH \
+  --set s3.bucket=$RELEASE_MANAGER_STATE_BUCKET \
+  --set s3.region=$BUCKET_REGION \
+  --name releasemanager-$PROD_CLUSTER_NAME
+```
+
+#### 3. Provision a failover cluster during a disaster scenario
+
+#### 4. Deploy saved releases to the failover cluster.
+
+**NOTE!** Be sure to --new-path. This prevents Release Manager in failover cluster from overwriting the production state
+
+```shell
+releasemanager import s3 \
+  --kubeconfig $FAILOVER_CLUSTER_KUBECONFIG \
+  --path $PROD_CLUSTER_BACKEND_PATH \
+  --new-path $FAILOVER_CLUSTER_BACKEND_PATH \
+  --bucket $RELEASE_MANAGER_STATE_BUCKET \
+  --region $BUCKET_REGION
+```
 
 ## License
 [![license](https://img.shields.io/github/license/logicmonitor/k8s-argus.svg?style=flat-square)](https://github.com/logicmonitor/k8s-argus/blob/master/LICENSE)
