@@ -2,6 +2,7 @@ build
 coverage.txt
 run.sh
 notes.txt
+/chart
 /k8s-release-manager
 /releasemanager
 /test.sh
