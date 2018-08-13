@@ -15,4 +15,4 @@ ifneq ($(MAKECMDGOALS), linux)
 	$(error Valid local build targets are "linux" and "darwin")
 endif
 endif
-	GOOS=$(MAKECMDGOALS) GOARCH=amd64 CGO_ENABLED=0 go build -o ./$(REPOSITORY) -ldflags "-X \"github.com/logicmonitor/k8s-release-manager/pkg/constants.Version=${VERSION}\""
+	GOOS=$(MAKECMDGOALS) GOARCH=amd64 CGO_ENABLED=0 go build -o ./$(REPOSITORY) -ldflags "-X \"github.com/logicmonitor/k8s-release-manager/pkg/constants.Version=${VERSION}\"" cmd/releasemanager/main.go

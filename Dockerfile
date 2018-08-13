@@ -2,7 +2,7 @@ FROM golang:1.9 as build
 WORKDIR $GOPATH/src/github.com/logicmonitor/k8s-release-manager
 COPY ./ ./
 ARG VERSION
-RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /releasemanager -ldflags "-X \"github.com/logicmonitor/k8s-release-manager/pkg/constants.Version=${VERSION}\""
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /releasemanager -ldflags "-X \"github.com/logicmonitor/k8s-release-manager/pkg/constants.Version=${VERSION}\"" cmd/releasemanager/main.go
 
 FROM golang:1.9 as test
 ARG CI
