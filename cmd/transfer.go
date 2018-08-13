@@ -31,6 +31,11 @@ Import is designed to fail if a release already exists with the same name as
 a stored release. This is by design. If you to overwrite an existing release,
 you should delete it first using helm delete --purge.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
+		valid := validateCommonConfig()
+		if !valid {
+			failAuth(cmd)
+		}
+
 		rlsmgrconfig.Helm.ReleaseTimeoutSec = int64(releaseTimeoutSec)
 		rlsmgrconfig.Transfer = &config.TransferConfig{
 			Force:          force,

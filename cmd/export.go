@@ -39,7 +39,7 @@ official Release Manager Helm chart. Failing to specify --release-name or
 use the official Helm chart can lead to multiple Release Manager instances
 writing state to the same backend path, causing conflicts, overwrites chaos.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		valid := validateConfig()
+		valid := validateCommonConfig()
 		if !valid {
 			failAuth(cmd)
 		}

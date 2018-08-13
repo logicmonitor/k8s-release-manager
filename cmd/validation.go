@@ -16,7 +16,7 @@ func failAuth(cmd *cobra.Command) {
 	os.Exit(0)
 }
 
-func validateConfig() bool {
+func validateCommonConfig() bool {
 	valid := true
 	if rlsmgrconfig.Backend.StoragePath == "" {
 		fmt.Println("You must specify --path")
