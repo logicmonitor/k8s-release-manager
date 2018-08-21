@@ -80,18 +80,18 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 		wg.Add(1)
 		go func(r *rls.Release) {
 			defer wg.Done()
-			t.deployRelease(r)
+			err := t.deployRelease(r)
+			if err != nil {
+				fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
+			}
 		}(r)
 	}
 	wg.Wait()
 	return nil
 }
 
-func (t *Transfer) deployRelease(r *rls.Release) {
-	err := t.HelmClient.Install(r)
-	if err != nil {
-		log.Errorf("Error deploying release %s: %v", r.GetName(), err)
-	}
+func (t *Transfer) deployRelease(r *rls.Release) error {
+	return t.HelmClient.Install(r)
 }
 
 // if this is the release manager release, update the backend path, else return unmodified
