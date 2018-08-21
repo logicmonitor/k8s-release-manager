@@ -21,9 +21,6 @@ func listOpts() []helm.ReleaseListOption {
 		helm.ReleaseListStatuses([]rls.Status_Code{
 			rls.Status_DEPLOYED,
 			rls.Status_FAILED,
-			rls.Status_PENDING_INSTALL,
-			rls.Status_PENDING_ROLLBACK,
-			rls.Status_PENDING_UPGRADE,
 		}),
 	}
 }
