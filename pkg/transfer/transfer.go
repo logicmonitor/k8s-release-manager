@@ -83,7 +83,9 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 			err := t.deployRelease(r)
 			if err != nil {
 				fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
+				return
 			}
+			fmt.Printf("Successfully deployed release %s\n", r.GetName())
 		}(r)
 	}
 	wg.Wait()
