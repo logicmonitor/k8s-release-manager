@@ -82,7 +82,11 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 			defer wg.Done()
 			err := t.deployRelease(r)
 			if err != nil {
-				fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
+				if lmhelm.ErrorReleaseExists(err) {
+					fmt.Printf("Skipping release: %s already exists\n", r.GetName())
+				} else {
+					fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
+				}
 				return
 			}
 			fmt.Printf("Successfully deployed release %s\n", r.GetName())
