@@ -22,7 +22,7 @@ backend and install all exported releases to the current Kubernetes cluster.
 -  **Configurable storage backends:**
 Release Manager can interact with multiple release state storage backends.
 Currently supported backends are:
-    - S3
+    - S3 (**Note:** S3 object versioning is strongly recommended for backend buckets)
     - Local (**Note:** the local backend is intended for non-production use only)
 
 ## Release Manager Overview
