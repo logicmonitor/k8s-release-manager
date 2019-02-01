@@ -2,7 +2,6 @@ package transfer
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
@@ -62,7 +61,7 @@ func (t *Transfer) Run() error {
 
 func (t *Transfer) deployReleases(releases []*rls.Release) error {
 	var err error
-	var wg sync.WaitGroup
+	var sem = make(chan int, constants.ImportMaxThreads)
 	for _, r := range releases {
 		fmt.Printf("Deploying release: %s\n", r.GetName())
 
@@ -77,9 +76,8 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 			continue
 		}
 
-		wg.Add(1)
+		sem <- 1
 		go func(r *rls.Release) {
-			defer wg.Done()
 			err := t.deployRelease(r)
 			if err != nil {
 				if lmhelm.ErrorReleaseExists(err) {
@@ -87,12 +85,13 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 				} else {
 					fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
 				}
-				return
+			} else {
+				fmt.Printf("Successfully deployed release %s\n", r.GetName())
 			}
-			fmt.Printf("Successfully deployed release %s\n", r.GetName())
+			<-sem
+			return
 		}(r)
 	}
-	wg.Wait()
 	return nil
 }
 
