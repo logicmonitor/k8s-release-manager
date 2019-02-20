@@ -78,6 +78,7 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 
 		sem <- 1
 		go func(r *rls.Release) {
+			defer func() { <-sem }()
 			err := t.deployRelease(r)
 			if err != nil {
 				if lmhelm.ErrorReleaseExists(err) {
@@ -88,9 +89,13 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 			} else {
 				fmt.Printf("Successfully deployed release %s\n", r.GetName())
 			}
-			<-sem
 			return
 		}(r)
+	}
+
+	// wait for installs to finish
+	for i := 0; i < cap(sem); i++ {
+		sem <- 1
 	}
 	return nil
 }
