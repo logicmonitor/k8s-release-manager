@@ -20,8 +20,11 @@ func (m *Export) currentReleases() ([]*rls.Release, error) {
 		results = releases
 	} else {
 		for _, r := range releases {
-			if _, ok := m.Config.Export.Namespaces[r.Namespace]; ok {
-				results = append(results, r)
+			for _, ns := range m.Config.Export.Namespaces {
+				if r.Namespace == ns {
+					results = append(results, r)
+					break
+				}
 			}
 		}
 	}

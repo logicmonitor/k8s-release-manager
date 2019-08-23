@@ -29,7 +29,7 @@ type ExportConfig struct {
 	DaemonMode      bool
 	ReleaseName     string
 	PollingInterval int64
-	Namespaces      map[string]string
+	Namespaces      []string
 }
 
 // HelmConfig represents the application's configurations for interacting with Helm

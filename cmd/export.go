@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/export"
@@ -16,7 +15,7 @@ import (
 var daemon bool
 var mgrstate *state.State
 var pollingInterval int
-var namespaces string
+var namespaces *[]string
 
 var exportCmd = &cobra.Command{
 	Use:   "export",
@@ -46,17 +45,11 @@ writing state to the same backend path, causing conflicts, overwrites, chaos.`,
 			failAuth(cmd)
 		}
 
-		ns, err := parseNamespaces(viper.GetString("namespaces"))
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
 		rlsmgrconfig.Export = &config.ExportConfig{
 			DaemonMode:      viper.GetBool("daemon"),
 			ReleaseName:     viper.GetString("releaseName"),
 			PollingInterval: viper.GetInt64("pollingInterval"),
-			Namespaces: 		 ns,
+			Namespaces:      viper.GetStringSlice("namespaces"),
 		}
 	},
 }
@@ -65,12 +58,12 @@ func init() { // nolint: dupl
 	exportCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Run in daemon mode and periodically export the current state")
 	exportCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Specify, in seconds, how frequently the daemon should export the current state")
 	exportCmd.PersistentFlags().StringVarP(&releaseName, "release-name", "", "", "Specify the Release Manager daemon's Helm release name")
-	exportCmd.PersistentFlags().StringVarP(&namespaces, "namespaces", "", "", "A comma-delimited list of namespaces to export. The default behavior is to export all namespaces")
+	namespaces = exportCmd.PersistentFlags().StringSliceP("namespaces", "", []string{}, "A list of namespaces to export. The default behavior is to export all namespaces")
 	err := bindConfigFlags(exportCmd, map[string]string{
 		"daemon":          "daemon",
 		"pollingInterval": "polling-interval",
 		"releaseName":     "release-name",
-		"namespaces":			 "namespaces",
+		"namespaces":      "namespaces",
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -90,14 +83,4 @@ func exportRun(cmd *cobra.Command, args []string) { // nolint: dupl
 	if err != nil {
 		log.Errorf("%v", err)
 	}
-}
-
-func parseNamespaces(namespaces string) (map[string]string, error) {
-	results := make(map[string]string)
-	// remove whitespace and split
-	ns := strings.Split(strings.Replace(namespaces, " ", "", -1), ",")
-	for _, n := range ns {
-		results[n] = n
-	}
-	return  results, nil
 }
