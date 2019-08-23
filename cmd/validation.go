@@ -25,6 +25,16 @@ func validateCommonConfig() bool {
 	return valid
 }
 
+func validateImportConfig() bool {
+	valid := true
+	if rlsmgrconfig.Import.Target != "" && rlsmgrconfig.Import.Namespace == "" {
+		// if target namespace is specified, source namespace is also required
+		fmt.Println("You must specify --namespace if --target-namespace is specified")
+		valid = false
+	}
+	return valid
+}
+
 func validateS3Config(opts *backend.S3Opts) bool {
 	valid := true
 	if opts.Bucket == "" {

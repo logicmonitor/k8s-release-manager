@@ -7,7 +7,7 @@ type Config struct {
 	Export        *ExportConfig
 	Helm          *HelmConfig
 	ClusterConfig *ClusterConfig
-	Import      *ImportConfig
+	Import        *ImportConfig
 	DebugMode     bool
 	DryRun        bool
 	VerboseMode   bool
@@ -29,7 +29,7 @@ type ExportConfig struct {
 	DaemonMode      bool
 	ReleaseName     string
 	PollingInterval int64
-	Namespaces map[string]string
+	Namespaces      map[string]string
 }
 
 // HelmConfig represents the application's configurations for interacting with Helm
@@ -42,4 +42,7 @@ type HelmConfig struct {
 type ImportConfig struct {
 	Force          bool
 	NewStoragePath string
+	Namespace      string
+	Target         string
+	Values         map[string]string
 }

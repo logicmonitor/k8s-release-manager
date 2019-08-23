@@ -11,7 +11,7 @@ import (
 )
 
 var force bool
-var newStoragePath string
+var newStoragePath, namespace, target string
 var releaseTimeoutSec int
 
 var importCmd = &cobra.Command{
@@ -31,15 +31,17 @@ Import is designed to fail if a release already exists with the same name as
 a stored release. This is by design. If you want to overwrite an existing
 release, you should use the helm delete --purge to delete it first.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		valid := validateCommonConfig()
+		valid := validateCommonConfig() && validateImportConfig()
 		if !valid {
 			failAuth(cmd)
 		}
 
 		rlsmgrconfig.Helm.ReleaseTimeoutSec = int64(releaseTimeoutSec)
-		rlsmgrconfig.Transfer = &config.TransferConfig{
+		rlsmgrconfig.Import = &config.ImportConfig{
 			Force:          force,
 			NewStoragePath: newStoragePath,
+			Namespace: 			namespace,
+			Target:					target,
 		}
 	},
 }
@@ -48,10 +50,14 @@ func init() { // nolint: dupl
 	importCmd.PersistentFlags().BoolVarP(&force, "force", "", false, "Skip safety checks")
 	importCmd.PersistentFlags().IntVarP(&releaseTimeoutSec, "release-timeout", "", 300, "The time, in seconds, to wait for an individual Helm release to install")
 	importCmd.PersistentFlags().StringVarP(&newStoragePath, "new-path", "", "", "When installing an exported Release Manager release, update the value of --path")
+	importCmd.PersistentFlags().StringVarP(&namespace, "namespace", "", "", "Specify a specific namespace to import releases from. Required if 'target-namespace' specified")
+	importCmd.PersistentFlags().StringVarP(&target, "target-namespace", "", "", "Specify a new namespace to import releases to")
 	err := bindConfigFlags(importCmd, map[string]string{
 		"force":          "force",
 		"releaseTimeout": "polling-timeout",
 		"newPath":        "new-path",
+		"namespace":			"namespace",
+		"target":					"target-namespace",
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -63,7 +69,7 @@ func init() { // nolint: dupl
 func importRun(cmd *cobra.Command, args []string) { // nolint: dupl
 	importt, err := importt.New(rlsmgrconfig, mgrstate)
 	if err != nil {
-		log.Fatalf("Failed to create Release Manager transfer: %v", err)
+		log.Fatalf("Failed to create Release Manager import: %v", err)
 	}
 
 	err = importt.Run()
