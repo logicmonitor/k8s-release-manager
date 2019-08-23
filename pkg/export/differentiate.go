@@ -7,14 +7,31 @@ import (
 )
 
 func (m *Export) currentReleases() ([]*rls.Release, error) {
+	var results []*rls.Release
+
 	log.Debugf("Finding installed releases.")
 	releases, err := m.HelmClient.ListInstalledReleases()
-	if m.Config.DebugMode && err == nil {
+	if err != nil {
+		return nil, err
+	}
+
+	// if no namespaces specified, return all releases
+	if len(m.Config.Export.Namespaces) == 0 {
+		results = releases
+	} else {
 		for _, r := range releases {
+			if _, ok := m.Config.Export.Namespaces[r.Namespace]; ok {
+				results = append(results, r)
+			}
+		}
+	}
+
+	if m.Config.DebugMode {
+		for _, r := range results {
 			log.Debugf("Found installed release %s", release.Filename(r))
 		}
 	}
-	return releases, err
+	return results, nil
 }
 
 func (m *Export) storedReleases() ([]string, error) {
