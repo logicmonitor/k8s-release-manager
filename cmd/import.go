@@ -28,8 +28,8 @@ you're really sure that this is an operation you want to perform (it probably
 isn't), you can set --force to ignore safety checks.
 
 Import is designed to fail if a release already exists with the same name as
-a stored release. This is by design. If you to overwrite an existing release,
-you should delete it first using helm delete --purge.`,
+a stored release. This is by design. If you want to overwrite an existing
+release, you should use the helm delete --purge to delete it first.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		valid := validateCommonConfig()
 		if !valid {
