@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
-	"github.com/logicmonitor/k8s-release-manager/pkg/transfer"
+	"github.com/logicmonitor/k8s-release-manager/pkg/importt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -61,12 +61,12 @@ func init() { // nolint: dupl
 }
 
 func importRun(cmd *cobra.Command, args []string) { // nolint: dupl
-	transfer, err := transfer.New(rlsmgrconfig, mgrstate)
+	importt, err := importt.New(rlsmgrconfig, mgrstate)
 	if err != nil {
 		log.Fatalf("Failed to create Release Manager transfer: %v", err)
 	}
 
-	err = transfer.Run()
+	err = importt.Run()
 	if err != nil {
 		log.Errorf("%v", err)
 	}

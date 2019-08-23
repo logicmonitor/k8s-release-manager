@@ -1,4 +1,4 @@
-package transfer
+package importt
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ func New(rlsmgrconfig *config.Config, state *state.State) (*Import, error) {
 	}, nil
 }
 
-// Run the Transfer.
+// Run the Import
 func (t *Import) Run() error {
 	releases, err := t.State.Releases.StoredReleases()
 	if err != nil {
