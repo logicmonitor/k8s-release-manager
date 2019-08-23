@@ -7,7 +7,7 @@ type Config struct {
 	Export        *ExportConfig
 	Helm          *HelmConfig
 	ClusterConfig *ClusterConfig
-	Transfer      *TransferConfig
+	Import      *ImportConfig
 	DebugMode     bool
 	DryRun        bool
 	VerboseMode   bool
@@ -37,8 +37,8 @@ type HelmConfig struct {
 	TillerNamespace   string
 }
 
-//TransferConfig represents configuration options for the backend storage
-type TransferConfig struct {
+//ImportConfig represents configuration options for the backend storage
+type ImportConfig struct {
 	Force          bool
 	NewStoragePath string
 }
