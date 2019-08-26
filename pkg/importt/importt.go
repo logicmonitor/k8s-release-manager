@@ -42,9 +42,24 @@ func New(rlsmgrconfig *config.Config, state *state.State) (*Import, error) {
 
 // Run the Import
 func (t *Import) Run() error {
-	releases, err := t.State.Releases.StoredReleases()
+	var releases []*rls.Release
+	r, err := t.State.Releases.StoredReleases()
 	if err != nil {
 		log.Fatalf("Error retrieving stored releases: %v", err)
+	}
+
+	// if no namespaces specified, return all releases
+	if t.Config.Import.Namespace == "" {
+		releases = r
+	} else {
+		releases = filterReleasesByNamespace(r, t.Config.Import.Namespace)
+	}
+
+	if len(t.Config.Import.Values) > 0 {
+		releases, err = updateValues(releases, t.Config.Import.Values)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = t.State.Read()
@@ -59,11 +74,40 @@ func (t *Import) Run() error {
 	return t.deployReleases(releases)
 }
 
+func filterReleasesByNamespace(releases []*rls.Release, namespace string) []*rls.Release {
+	var deploy []*rls.Release
+	for _, r := range releases {
+		if r.Namespace == namespace {
+			deploy = append(deploy, r)
+		}
+	}
+	return deploy
+}
+
+func updateValues(releases []*rls.Release, values map[string]string) ([]*rls.Release, error) {
+	log.Debugf("Updating releases values")
+	var err error
+	for _, r := range releases {
+		for k, v := range values {
+			r, err = release.UpdateValue(r, k, v)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return releases, nil
+}
+
 func (t *Import) deployReleases(releases []*rls.Release) error {
 	var err error
 	var sem = make(chan int, constants.ImportMaxThreads)
 	for _, r := range releases {
 		fmt.Printf("Deploying release: %s\n", r.GetName())
+
+		// update the target namespace if option specified
+		if t.Config.Import.Target != "" {
+			r.Namespace = t.Config.Import.Target
+		}
 
 		r, err = t.updateManagerRelease(r)
 		if err != nil {

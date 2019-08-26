@@ -93,10 +93,15 @@ func UpdateValue(r *rls.Release, name string, value string) (*rls.Release, error
 
 func updateValueStruct(values map[string]*chart.Value, name string, value string) (map[string]*chart.Value, error) {
 	if values != nil {
+		if _, ok := values[name]; !ok {
+			log.Warnf("Value %s doesn't exist in the stored release, so refusing to update it", name)
+			return values, nil
+		}
+
 		// again, it's not exactly clear if/how helm/tiller is using config.Values,
 		// so i'm just kind of assuming that the key should be the full value
 		// path string and assigning as such. This may not end up being correct,
-		// but given that config.Values is map[string]*Value, i can't possibly
+		// but given that config.Values is map[string]*Value, i can't possibly see
 		// how it could be nested.
 		values[name] = &chart.Value{
 			Value: value,
@@ -141,6 +146,7 @@ func updateNestedMapString(m map[interface{}]interface{}, path []string, value s
 		m[key], err = updateNestedMapString(m[key].(map[interface{}]interface{}), path[1:], value)
 		return m, err
 	default:
-		return nil, fmt.Errorf("Key %s does not exist", key)
+		log.Warnf("Value %s doesn't exist in the stored release, so refusing to update it", key)
+		return m, nil
 	}
 }

@@ -8,11 +8,13 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/importt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var force bool
 var newStoragePath, namespace, target string
 var releaseTimeoutSec int
+var values map[string]string
 
 var importCmd = &cobra.Command{
 	Use:   "import",
@@ -31,33 +33,44 @@ Import is designed to fail if a release already exists with the same name as
 a stored release. This is by design. If you want to overwrite an existing
 release, you should use the helm delete --purge to delete it first.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		valid := validateCommonConfig() && validateImportConfig()
+		valid := validateCommonConfig()
 		if !valid {
 			failAuth(cmd)
 		}
 
-		rlsmgrconfig.Helm.ReleaseTimeoutSec = int64(releaseTimeoutSec)
+		_ = viper.GetStringMapString("valueUpdates")
+		rlsmgrconfig.Helm.ReleaseTimeoutSec = viper.GetInt64("releaseTimeout")
 		rlsmgrconfig.Import = &config.ImportConfig{
-			Force:          force,
-			NewStoragePath: newStoragePath,
-			Namespace: 			namespace,
-			Target:					target,
+			Force:          viper.GetBool("force"),
+			NewStoragePath: viper.GetString("newPath"),
+			Namespace:      viper.GetString("namespace"),
+			Target:         viper.GetString("target"),
+			Values:         values,
+		}
+
+		valid = validateImportConfig()
+		if !valid {
+			failAuth(cmd)
 		}
 	},
 }
 
 func init() { // nolint: dupl
+	values = map[string]string{}
 	importCmd.PersistentFlags().BoolVarP(&force, "force", "", false, "Skip safety checks")
 	importCmd.PersistentFlags().IntVarP(&releaseTimeoutSec, "release-timeout", "", 300, "The time, in seconds, to wait for an individual Helm release to install")
 	importCmd.PersistentFlags().StringVarP(&newStoragePath, "new-path", "", "", "When installing an exported Release Manager release, update the value of --path")
 	importCmd.PersistentFlags().StringVarP(&namespace, "namespace", "", "", "Specify a specific namespace to import releases from. Required if 'target-namespace' specified")
 	importCmd.PersistentFlags().StringVarP(&target, "target-namespace", "", "", "Specify a new namespace to import releases to")
+	importCmd.PersistentFlags().StringToStringVarP(&values, "update-values", "", map[string]string{}, "Specify a mapping of values to update when importing releases. Overrides apply to all releases for which a given value is already set, but will not insert the value if it doesn't already exist")
+
 	err := bindConfigFlags(importCmd, map[string]string{
 		"force":          "force",
-		"releaseTimeout": "polling-timeout",
+		"releaseTimeout": "release-timeout",
 		"newPath":        "new-path",
-		"namespace":			"namespace",
-		"target":					"target-namespace",
+		"namespace":      "namespace",
+		"target":         "target-namespace",
+		"valueUpdates":   "update-values",
 	})
 	if err != nil {
 		fmt.Println(err)
