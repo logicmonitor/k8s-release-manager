@@ -85,7 +85,7 @@ func filterReleasesByNamespace(releases []*rls.Release, namespace string) []*rls
 }
 
 func updateValues(releases []*rls.Release, values map[string]string) ([]*rls.Release, error) {
-	log.Debugf("Updating releases values")
+	log.Debugf("Updating release values\n")
 	var err error
 	for _, r := range releases {
 		for k, v := range values {
@@ -102,7 +102,7 @@ func (t *Import) deployReleases(releases []*rls.Release) error {
 	var err error
 	var sem = make(chan int, constants.ImportMaxThreads)
 	for _, r := range releases {
-		fmt.Printf("Deploying release: %s\n", r.GetName())
+		fmt.Printf("Deploying release %s to namespace %s\n", r.GetName(), r.GetNamespace())
 
 		// update the target namespace if option specified
 		if t.Config.Import.Target != "" {
