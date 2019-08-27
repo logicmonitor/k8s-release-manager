@@ -47,13 +47,9 @@ func (t *Import) Run() error {
 		log.Fatalf("Error retrieving stored releases: %v", err)
 	}
 
-	releases = t.filterReleasesByNamespace(releases)
-
-	if len(t.Config.Import.Values) > 0 {
-		releases, err = updateValues(releases, t.Config.Import.Values)
-		if err != nil {
-			return err
-		}
+	releases, err = t.processReleases(releases)
+	if err != nil {
+		return err
 	}
 
 	err = t.State.Read()
@@ -68,31 +64,36 @@ func (t *Import) Run() error {
 	return t.deployReleases(releases)
 }
 
+func (t *Import) processReleases(releases []*rls.Release) ([]*rls.Release, error) {
+	releases = t.filterReleasesByNamespace(releases)
+	return t.updateValues(releases)
+}
+
 func (t *Import) filterReleasesByNamespace(releases []*rls.Release) []*rls.Release {
 	if t.Config.Import.Namespace != "" {
-		return includeReleasesByNamespace(releases, t.Config.Import.Namespace)
+		return t.includeReleasesByNamespace(releases)
 	}
 	if len(t.Config.Import.ExcludeNamespaces) > 0 {
-		return excludeReleasesByNamespace(releases, t.Config.Import.ExcludeNamespaces)
+		return t.excludeReleasesByNamespace(releases)
 	}
 	return releases
 }
 
-func includeReleasesByNamespace(releases []*rls.Release, namespace string) []*rls.Release {
+func (t *Import) includeReleasesByNamespace(releases []*rls.Release) []*rls.Release {
 	var deploy []*rls.Release
 	for _, r := range releases {
-		if r.Namespace == namespace {
+		if r.Namespace == t.Config.Import.Namespace {
 			deploy = append(deploy, r)
 		}
 	}
 	return deploy
 }
 
-func excludeReleasesByNamespace(releases []*rls.Release, namespaces []string) []*rls.Release {
+func (t *Import) excludeReleasesByNamespace(releases []*rls.Release) []*rls.Release {
 	var deploy []*rls.Release
 	for _, r := range releases {
 		bMatch := false
-		for _, namespace := range namespaces {
+		for _, namespace := range t.Config.Import.ExcludeNamespaces {
 			if r.Namespace == namespace {
 				bMatch = true
 				break
@@ -106,11 +107,11 @@ func excludeReleasesByNamespace(releases []*rls.Release, namespaces []string) []
 	return deploy
 }
 
-func updateValues(releases []*rls.Release, values map[string]string) ([]*rls.Release, error) {
+func (t *Import) updateValues(releases []*rls.Release) ([]*rls.Release, error) {
 	log.Debugf("Updating release values\n")
 	var err error
 	for _, r := range releases {
-		for k, v := range values {
+		for k, v := range t.Config.Import.Values {
 			r, err = release.UpdateValue(r, k, v)
 			if err != nil {
 				return nil, err
@@ -143,19 +144,9 @@ func (t *Import) deployReleases(releases []*rls.Release) error {
 		}
 
 		sem <- 1
-		go func(r *rls.Release) {
+		go func(r *rls.Release) error {
 			defer func() { <-sem }()
-			err := t.deployRelease(r)
-			if err != nil {
-				if lmhelm.ErrorReleaseExists(err) {
-					fmt.Printf("Skipping release: %s already exists\n", r.GetName())
-				} else {
-					fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
-				}
-			} else {
-				fmt.Printf("Successfully deployed release %s\n", r.GetName())
-			}
-			return
+			return t.deployRelease(r)
 		}(r)
 	}
 
@@ -167,7 +158,18 @@ func (t *Import) deployReleases(releases []*rls.Release) error {
 }
 
 func (t *Import) deployRelease(r *rls.Release) error {
-	return t.HelmClient.Install(r)
+	err := t.HelmClient.Install(r)
+	if err != nil {
+		if lmhelm.ErrorReleaseExists(err) {
+			fmt.Printf("Skipping release: %s already exists\n", r.GetName())
+		} else {
+			fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
+			return err
+		}
+	} else {
+		fmt.Printf("Successfully deployed release %s\n", r.GetName())
+	}
+	return nil
 }
 
 // if this is the release manager release, update the backend path, else return unmodified
