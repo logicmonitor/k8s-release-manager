@@ -42,18 +42,12 @@ func New(rlsmgrconfig *config.Config, state *state.State) (*Import, error) {
 
 // Run the Import
 func (t *Import) Run() error {
-	var releases []*rls.Release
-	r, err := t.State.Releases.StoredReleases()
+	releases, err := t.State.Releases.StoredReleases()
 	if err != nil {
 		log.Fatalf("Error retrieving stored releases: %v", err)
 	}
 
-	// if no namespaces specified, return all releases
-	if t.Config.Import.Namespace == "" {
-		releases = r
-	} else {
-		releases = filterReleasesByNamespace(r, t.Config.Import.Namespace)
-	}
+	releases = t.filterReleasesByNamespace(releases)
 
 	if len(t.Config.Import.Values) > 0 {
 		releases, err = updateValues(releases, t.Config.Import.Values)
@@ -74,12 +68,40 @@ func (t *Import) Run() error {
 	return t.deployReleases(releases)
 }
 
-func filterReleasesByNamespace(releases []*rls.Release, namespace string) []*rls.Release {
+func (t *Import) filterReleasesByNamespace(releases []*rls.Release) []*rls.Release {
+	if t.Config.Import.Namespace != "" {
+		return includeReleasesByNamespace(releases, t.Config.Import.Namespace)
+	}
+	if len(t.Config.Import.ExcludeNamespaces) > 0 {
+		return excludeReleasesByNamespace(releases, t.Config.Import.ExcludeNamespaces)
+	}
+	return releases
+}
+
+func includeReleasesByNamespace(releases []*rls.Release, namespace string) []*rls.Release {
 	var deploy []*rls.Release
 	for _, r := range releases {
 		if r.Namespace == namespace {
 			deploy = append(deploy, r)
 		}
+	}
+	return deploy
+}
+
+func excludeReleasesByNamespace(releases []*rls.Release, namespaces []string) []*rls.Release {
+	var deploy []*rls.Release
+	for _, r := range releases {
+		bMatch := false
+		for _, namespace := range namespaces {
+			if r.Namespace == namespace {
+				bMatch = true
+				break
+			}
+		}
+		if bMatch {
+			continue
+		}
+		deploy = append(deploy, r)
 	}
 	return deploy
 }

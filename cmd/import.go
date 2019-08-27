@@ -41,11 +41,12 @@ release, you should use the helm delete --purge to delete it first.`,
 		_ = viper.GetStringMapString("valueUpdates")
 		rlsmgrconfig.Helm.ReleaseTimeoutSec = viper.GetInt64("releaseTimeout")
 		rlsmgrconfig.Import = &config.ImportConfig{
-			Force:          viper.GetBool("force"),
-			NewStoragePath: viper.GetString("newPath"),
-			Namespace:      viper.GetString("namespace"),
-			Target:         viper.GetString("target"),
-			Values:         values,
+			Force:             viper.GetBool("force"),
+			NewStoragePath:    viper.GetString("newPath"),
+			Namespace:         viper.GetString("namespace"),
+			Target:            viper.GetString("target"),
+			Values:            values,
+			ExcludeNamespaces: viper.GetStringSlice("excludeNamespaces"),
 		}
 
 		valid = validateImportConfig()
@@ -63,14 +64,16 @@ func init() { // nolint: dupl
 	importCmd.PersistentFlags().StringVarP(&namespace, "namespace", "", "", "Specify a specific namespace to import releases from. Required if 'target-namespace' specified")
 	importCmd.PersistentFlags().StringVarP(&target, "target-namespace", "", "", "Specify a new namespace to import releases to")
 	importCmd.PersistentFlags().StringToStringVarP(&values, "update-values", "", map[string]string{}, "Specify a mapping of values to update when importing releases. Overrides apply to all releases for which a given value is already set, but will not insert the value if it doesn't already exist")
+	importCmd.PersistentFlags().StringSliceP("exclude-namespaces", "", []string{}, "A list of namespaces to exclude. The default behavior is to import all namespaces")
 
 	err := bindConfigFlags(importCmd, map[string]string{
-		"force":          "force",
-		"releaseTimeout": "release-timeout",
-		"newPath":        "new-path",
-		"namespace":      "namespace",
-		"target":         "target-namespace",
-		"valueUpdates":   "update-values",
+		"force":             "force",
+		"releaseTimeout":    "release-timeout",
+		"newPath":           "new-path",
+		"namespace":         "namespace",
+		"target":            "target-namespace",
+		"valueUpdates":      "update-values",
+		"excludeNamespaces": "exclude-namespaces",
 	})
 	if err != nil {
 		fmt.Println(err)

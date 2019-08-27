@@ -32,6 +32,12 @@ func validateImportConfig() bool {
 		fmt.Println("You must specify --namespace if --target-namespace is specified")
 		valid = false
 	}
+
+	if rlsmgrconfig.Import.Namespace != "" && len(rlsmgrconfig.Import.ExcludeNamespaces) > 0 {
+		// if target namespace is specified, you can't also set exclude namespaces
+		fmt.Println("The flags --namespace and --exclude-namespaces are mutually exclusive")
+		valid = false
+	}
 	return valid
 }
 

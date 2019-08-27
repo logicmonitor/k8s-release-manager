@@ -15,7 +15,6 @@ import (
 var daemon bool
 var mgrstate *state.State
 var pollingInterval int
-var namespaces *[]string
 
 var exportCmd = &cobra.Command{
 	Use:   "export",
@@ -58,7 +57,7 @@ func init() { // nolint: dupl
 	exportCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Run in daemon mode and periodically export the current state")
 	exportCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Specify, in seconds, how frequently the daemon should export the current state")
 	exportCmd.PersistentFlags().StringVarP(&releaseName, "release-name", "", "", "Specify the Release Manager daemon's Helm release name")
-	namespaces = exportCmd.PersistentFlags().StringSliceP("namespaces", "", []string{}, "A list of namespaces to export. The default behavior is to export all namespaces")
+	exportCmd.PersistentFlags().StringSliceP("namespaces", "", []string{}, "A list of namespaces to export. The default behavior is to export all namespaces")
 	err := bindConfigFlags(exportCmd, map[string]string{
 		"daemon":          "daemon",
 		"pollingInterval": "polling-interval",

@@ -40,9 +40,10 @@ type HelmConfig struct {
 
 //ImportConfig represents configuration options for the backend storage
 type ImportConfig struct {
-	Force          bool
-	NewStoragePath string
-	Namespace      string
-	Target         string
-	Values         map[string]string
+	Force             bool
+	NewStoragePath    string
+	Namespace         string
+	Target            string
+	Values            map[string]string
+	ExcludeNamespaces []string
 }
