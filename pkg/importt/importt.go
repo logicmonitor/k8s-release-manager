@@ -84,7 +84,7 @@ func (t *Import) deployReleases(releases []*rls.Release) error {
 		sem <- 1
 		go func(r *rls.Release) {
 			defer func() { <-sem }()
-			_ = t.deployRelease(r)
+			t.deployRelease(r)
 			return
 		}(r)
 	}
@@ -96,19 +96,17 @@ func (t *Import) deployReleases(releases []*rls.Release) error {
 	return nil
 }
 
-func (t *Import) deployRelease(r *rls.Release) error {
+func (t *Import) deployRelease(r *rls.Release) {
 	err := t.HelmClient.Install(r)
 	if err != nil {
 		if lmhelm.ErrorReleaseExists(err) {
 			fmt.Printf("Skipping release: %s already exists\n", r.GetName())
 		} else {
 			fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
-			return err
 		}
 	} else {
 		fmt.Printf("Successfully deployed release %s\n", r.GetName())
 	}
-	return nil
 }
 
 // if this is the release manager release, update the backend path, else return unmodified
