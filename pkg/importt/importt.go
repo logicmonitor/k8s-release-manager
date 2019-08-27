@@ -44,7 +44,7 @@ func New(rlsmgrconfig *config.Config, state *state.State) (*Import, error) {
 func (t *Import) Run() error {
 	releases, err := t.State.Releases.StoredReleases()
 	if err != nil {
-		log.Fatalf("Error retrieving stored releases: %v", err)
+		return fmt.Errorf("Error retrieving stored releases: %v", err)
 	}
 
 	releases, err = processReleases(releases, t.Config.Import)
@@ -82,9 +82,10 @@ func (t *Import) deployReleases(releases []*rls.Release) error {
 		}
 
 		sem <- 1
-		go func(r *rls.Release) error {
+		go func(r *rls.Release) {
 			defer func() { <-sem }()
-			return t.deployRelease(r)
+			_ = t.deployRelease(r)
+			return
 		}(r)
 	}
 
