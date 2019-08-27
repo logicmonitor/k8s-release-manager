@@ -47,7 +47,7 @@ func (t *Import) Run() error {
 		log.Fatalf("Error retrieving stored releases: %v", err)
 	}
 
-	releases, err = t.processReleases(releases)
+	releases, err = processReleases(releases, t.Config.Import)
 	if err != nil {
 		return err
 	}
@@ -64,73 +64,11 @@ func (t *Import) Run() error {
 	return t.deployReleases(releases)
 }
 
-func (t *Import) processReleases(releases []*rls.Release) ([]*rls.Release, error) {
-	releases = t.filterReleasesByNamespace(releases)
-	return t.updateValues(releases)
-}
-
-func (t *Import) filterReleasesByNamespace(releases []*rls.Release) []*rls.Release {
-	if t.Config.Import.Namespace != "" {
-		return t.includeReleasesByNamespace(releases)
-	}
-	if len(t.Config.Import.ExcludeNamespaces) > 0 {
-		return t.excludeReleasesByNamespace(releases)
-	}
-	return releases
-}
-
-func (t *Import) includeReleasesByNamespace(releases []*rls.Release) []*rls.Release {
-	var deploy []*rls.Release
-	for _, r := range releases {
-		if r.Namespace == t.Config.Import.Namespace {
-			deploy = append(deploy, r)
-		}
-	}
-	return deploy
-}
-
-func (t *Import) excludeReleasesByNamespace(releases []*rls.Release) []*rls.Release {
-	var deploy []*rls.Release
-	for _, r := range releases {
-		bMatch := false
-		for _, namespace := range t.Config.Import.ExcludeNamespaces {
-			if r.Namespace == namespace {
-				bMatch = true
-				break
-			}
-		}
-		if bMatch {
-			continue
-		}
-		deploy = append(deploy, r)
-	}
-	return deploy
-}
-
-func (t *Import) updateValues(releases []*rls.Release) ([]*rls.Release, error) {
-	log.Debugf("Updating release values\n")
-	var err error
-	for _, r := range releases {
-		for k, v := range t.Config.Import.Values {
-			r, err = release.UpdateValue(r, k, v)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return releases, nil
-}
-
 func (t *Import) deployReleases(releases []*rls.Release) error {
 	var err error
 	var sem = make(chan int, constants.ImportMaxThreads)
 	for _, r := range releases {
 		fmt.Printf("Deploying release %s to namespace %s\n", r.GetName(), r.GetNamespace())
-
-		// update the target namespace if option specified
-		if t.Config.Import.Target != "" {
-			r.Namespace = t.Config.Import.Target
-		}
 
 		r, err = t.updateManagerRelease(r)
 		if err != nil {
@@ -177,11 +115,7 @@ func (t *Import) updateManagerRelease(r *rls.Release) (*rls.Release, error) {
 	if t.Config.Import.NewStoragePath == "" || t.State.Info == nil || r.GetName() != t.State.Info.ReleaseName {
 		return r, nil
 	}
-	return t.updateManagerStoragePath(r, t.Config.Import.NewStoragePath)
-}
-
-func (t *Import) updateManagerStoragePath(r *rls.Release, path string) (*rls.Release, error) {
-	return release.UpdateValue(r, constants.ValueStoragePath, path)
+	return updateManagerStoragePath(r, t.Config.Import.NewStoragePath)
 }
 
 // if a state file exists but --new-path wasn't specified, this is probably bad.
