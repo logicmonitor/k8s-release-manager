@@ -1,4 +1,4 @@
-package transfer
+package importt
 
 import (
 	"fmt"
@@ -13,15 +13,15 @@ import (
 	rls "k8s.io/helm/pkg/proto/hapi/release"
 )
 
-// Transfer deploys remotely stored releases
-type Transfer struct {
+// Import remotely stored releases
+type Import struct {
 	Config     *config.Config
 	HelmClient *lmhelm.Client
 	State      *state.State
 }
 
 // New instantiates and returns a Deleter and an error if any.
-func New(rlsmgrconfig *config.Config, state *state.State) (*Transfer, error) {
+func New(rlsmgrconfig *config.Config, state *state.State) (*Import, error) {
 	helmClient := &lmhelm.Client{}
 
 	kubernetesClient, kubernetesConfig, err := client.KubernetesClient(rlsmgrconfig.ClusterConfig)
@@ -33,18 +33,23 @@ func New(rlsmgrconfig *config.Config, state *state.State) (*Transfer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Transfer{
+	return &Import{
 		Config:     rlsmgrconfig,
 		HelmClient: helmClient,
 		State:      state,
 	}, nil
 }
 
-// Run the Transfer.
-func (t *Transfer) Run() error {
+// Run the Import
+func (t *Import) Run() error {
 	releases, err := t.State.Releases.StoredReleases()
 	if err != nil {
-		log.Fatalf("Error retrieving stored releases: %v", err)
+		return fmt.Errorf("Error retrieving stored releases: %v", err)
+	}
+
+	releases, err = processReleases(releases, t.Config.Import)
+	if err != nil {
+		return err
 	}
 
 	err = t.State.Read()
@@ -59,11 +64,11 @@ func (t *Transfer) Run() error {
 	return t.deployReleases(releases)
 }
 
-func (t *Transfer) deployReleases(releases []*rls.Release) error {
+func (t *Import) deployReleases(releases []*rls.Release) error {
 	var err error
 	var sem = make(chan int, constants.ImportMaxThreads)
 	for _, r := range releases {
-		fmt.Printf("Deploying release: %s\n", r.GetName())
+		fmt.Printf("Deploying release %s to namespace %s\n", r.GetName(), r.GetNamespace())
 
 		r, err = t.updateManagerRelease(r)
 		if err != nil {
@@ -79,16 +84,7 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 		sem <- 1
 		go func(r *rls.Release) {
 			defer func() { <-sem }()
-			err := t.deployRelease(r)
-			if err != nil {
-				if lmhelm.ErrorReleaseExists(err) {
-					fmt.Printf("Skipping release: %s already exists\n", r.GetName())
-				} else {
-					fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
-				}
-			} else {
-				fmt.Printf("Successfully deployed release %s\n", r.GetName())
-			}
+			t.deployRelease(r)
 			return
 		}(r)
 	}
@@ -100,20 +96,25 @@ func (t *Transfer) deployReleases(releases []*rls.Release) error {
 	return nil
 }
 
-func (t *Transfer) deployRelease(r *rls.Release) error {
-	return t.HelmClient.Install(r)
+func (t *Import) deployRelease(r *rls.Release) {
+	err := t.HelmClient.Install(r)
+	if err != nil {
+		if lmhelm.ErrorReleaseExists(err) {
+			fmt.Printf("Skipping release: %s already exists\n", r.GetName())
+		} else {
+			fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
+		}
+	} else {
+		fmt.Printf("Successfully deployed release %s\n", r.GetName())
+	}
 }
 
 // if this is the release manager release, update the backend path, else return unmodified
-func (t *Transfer) updateManagerRelease(r *rls.Release) (*rls.Release, error) {
-	if t.Config.Transfer.NewStoragePath == "" || t.State.Info == nil || r.GetName() != t.State.Info.ReleaseName {
+func (t *Import) updateManagerRelease(r *rls.Release) (*rls.Release, error) {
+	if t.Config.Import.NewStoragePath == "" || t.State.Info == nil || r.GetName() != t.State.Info.ReleaseName {
 		return r, nil
 	}
-	return t.updateManagerStoragePath(r, t.Config.Transfer.NewStoragePath)
-}
-
-func (t *Transfer) updateManagerStoragePath(r *rls.Release, path string) (*rls.Release, error) {
-	return release.UpdateValue(r, constants.ValueStoragePath, path)
+	return updateManagerStoragePath(r, t.Config.Import.NewStoragePath)
 }
 
 // if a state file exists but --new-path wasn't specified, this is probably bad.
@@ -123,23 +124,23 @@ func (t *Transfer) updateManagerStoragePath(r *rls.Release, path string) (*rls.R
 // is going to cause all sorts of issues, including, but not limited to,
 // overwriting each other's release state.
 // do sanity checks here.
-func (t *Transfer) sanityCheck() error {
+func (t *Import) sanityCheck() error {
 	switch true {
-	case t.State.Info != nil && t.Config.Transfer.NewStoragePath == "":
+	case t.State.Info != nil && t.Config.Import.NewStoragePath == "":
 		return t.resolveStateConflict()
-	case t.State.Info == nil && t.Config.Transfer.NewStoragePath != "":
+	case t.State.Info == nil && t.Config.Import.NewStoragePath != "":
 		log.Warnf("--path specified but no remote state found.")
 		return nil
-	case t.State.Info == nil && t.Config.Transfer.NewStoragePath == "":
+	case t.State.Info == nil && t.Config.Import.NewStoragePath == "":
 		return nil
-	case t.State.Info != nil && t.Config.Transfer.NewStoragePath != "":
+	case t.State.Info != nil && t.Config.Import.NewStoragePath != "":
 		return nil
 	default:
 		return fmt.Errorf("Unknown error performing state sanity checks. Failing")
 	}
 }
 
-func (t *Transfer) resolveStateConflict() error {
+func (t *Import) resolveStateConflict() error {
 	warn := "This can lead to unexpected results and is probably a mistake. If you really wish to continue, use --force"
 	msg := fmt.Sprintf(
 		"Existing state %s exists in path %s but --new-path wasn't specified.",
@@ -148,7 +149,7 @@ func (t *Transfer) resolveStateConflict() error {
 	)
 
 	// in case the user REALLY wants to proceed anyway
-	if t.Config.Transfer.Force {
+	if t.Config.Import.Force {
 		log.Warnf("%s\n--force specified. Proceeding...", msg)
 		return nil
 	}

@@ -9,12 +9,33 @@ import (
 func (m *Export) currentReleases() ([]*rls.Release, error) {
 	log.Debugf("Finding installed releases.")
 	releases, err := m.HelmClient.ListInstalledReleases()
-	if m.Config.DebugMode && err == nil {
+	if err != nil {
+		return nil, err
+	}
+
+	if len(m.Config.Export.Namespaces) != 0 {
+		releases = m.filterReleasesByNamespace(releases)
+	}
+
+	if m.Config.DebugMode {
 		for _, r := range releases {
 			log.Debugf("Found installed release %s", release.Filename(r))
 		}
 	}
-	return releases, err
+	return releases, nil
+}
+
+func (m *Export) filterReleasesByNamespace(releases []*rls.Release) []*rls.Release {
+	var results []*rls.Release
+	for _, r := range releases {
+		for _, ns := range m.Config.Export.Namespaces {
+			if r.Namespace == ns {
+				results = append(results, r)
+				break
+			}
+		}
+	}
+	return results
 }
 
 func (m *Export) storedReleases() ([]string, error) {

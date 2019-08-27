@@ -34,10 +34,10 @@ Installing releasemanager daemon via Helm chart
     --set path=$BACKEND_STORAGE_PATH \
   --name releasemanager-$CURRENT_CLUSTER
 
-When running in daemon mode, it is HIGHLY recommended when running to use the
+When running in daemon mode, it is HIGHLY recommended to use the
 official Release Manager Helm chart. Failing to specify --release-name or
 use the official Helm chart can lead to multiple Release Manager instances
-writing state to the same backend path, causing conflicts, overwrites chaos.`,
+writing state to the same backend path, causing conflicts, overwrites, chaos.`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		valid := validateCommonConfig()
 		if !valid {
@@ -48,6 +48,7 @@ writing state to the same backend path, causing conflicts, overwrites chaos.`,
 			DaemonMode:      viper.GetBool("daemon"),
 			ReleaseName:     viper.GetString("releaseName"),
 			PollingInterval: viper.GetInt64("pollingInterval"),
+			Namespaces:      viper.GetStringSlice("namespaces"),
 		}
 	},
 }
@@ -56,10 +57,12 @@ func init() { // nolint: dupl
 	exportCmd.PersistentFlags().BoolVarP(&daemon, "daemon", "", false, "Run in daemon mode and periodically export the current state")
 	exportCmd.PersistentFlags().IntVarP(&pollingInterval, "polling-interval", "p", 30, "Specify, in seconds, how frequently the daemon should export the current state")
 	exportCmd.PersistentFlags().StringVarP(&releaseName, "release-name", "", "", "Specify the Release Manager daemon's Helm release name")
+	exportCmd.PersistentFlags().StringSliceP("namespaces", "", []string{}, "A list of namespaces to export. The default behavior is to export all namespaces")
 	err := bindConfigFlags(exportCmd, map[string]string{
 		"daemon":          "daemon",
 		"pollingInterval": "polling-interval",
 		"releaseName":     "release-name",
+		"namespaces":      "namespaces",
 	})
 	if err != nil {
 		fmt.Println(err)
