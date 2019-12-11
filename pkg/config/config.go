@@ -46,4 +46,5 @@ type ImportConfig struct {
 	Target            string
 	Values            map[string]string
 	ExcludeNamespaces []string
+	Threads           int64
 }

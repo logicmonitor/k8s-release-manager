@@ -13,7 +13,7 @@ import (
 
 var force bool
 var newStoragePath, namespace, target string
-var releaseTimeoutSec int
+var releaseTimeoutSec, threads int
 var values map[string]string
 
 var importCmd = &cobra.Command{
@@ -47,6 +47,7 @@ release, you should use the helm delete --purge to delete it first.`,
 			Target:            viper.GetString("target"),
 			Values:            values,
 			ExcludeNamespaces: viper.GetStringSlice("excludeNamespaces"),
+			Threads:           viper.GetInt64("threads"),
 		}
 
 		valid = validateImportConfig()
@@ -65,6 +66,7 @@ func init() { // nolint: dupl
 	importCmd.PersistentFlags().StringVarP(&target, "target-namespace", "", "", "Specify a new namespace to import releases to")
 	importCmd.PersistentFlags().StringToStringVarP(&values, "update-values", "", map[string]string{}, "Specify a mapping of values to update when importing releases. Overrides apply to all releases for which a given value is already set, but will not insert the value if it doesn't already exist")
 	importCmd.PersistentFlags().StringSliceP("exclude-namespaces", "", []string{}, "A list of namespaces to exclude. The default behavior is to import all namespaces")
+	importCmd.PersistentFlags().IntVarP(&threads, "threads", "", 50, "The maximum number of threads to use for installing releases")
 
 	err := bindConfigFlags(importCmd, map[string]string{
 		"force":             "force",
@@ -74,6 +76,7 @@ func init() { // nolint: dupl
 		"target":            "target-namespace",
 		"valueUpdates":      "update-values",
 		"excludeNamespaces": "exclude-namespaces",
+		"threads":           "threads",
 	})
 	if err != nil {
 		fmt.Println(err)
