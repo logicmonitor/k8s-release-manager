@@ -39,9 +39,9 @@ func includeReleasesByNamespace(releases []*rls.Release, config *config.ImportCo
 }
 
 func updateNamespace(releases []*rls.Release, config *config.ImportConfig) []*rls.Release {
-	for _, r := range releases {
-		// update the target namespace if option specified
-		if config.Target != "" {
+	if config.Target != "" {
+		for _, r := range releases {
+			// update the target namespace if option specified
 			r.Namespace = config.Target
 		}
 	}
