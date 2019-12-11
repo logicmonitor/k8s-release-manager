@@ -5,7 +5,6 @@ import (
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
-	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
@@ -66,7 +65,7 @@ func (t *Import) Run() error {
 
 func (t *Import) deployReleases(releases []*rls.Release) error {
 	var err error
-	var sem = make(chan int, constants.ImportMaxThreads)
+	var sem = make(chan int, t.Config.Import.Threads)
 	for _, r := range releases {
 		fmt.Printf("Deploying release %s to namespace %s\n", r.GetName(), r.GetNamespace())
 

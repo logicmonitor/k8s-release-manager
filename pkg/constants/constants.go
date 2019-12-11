@@ -36,8 +36,3 @@ const (
 	// ValueStoragePath is the helm --set path for --path
 	ValueStoragePath = "backend.path"
 )
-
-const (
-	// ImportMaxThreads is the maximum number of threads to use for installing releases
-	ImportMaxThreads = 50
-)
