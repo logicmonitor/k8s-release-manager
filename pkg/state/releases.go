@@ -10,7 +10,7 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	log "github.com/sirupsen/logrus"
-	rls "k8s.io/helm/pkg/proto/hapi/release"
+	rls "helm.sh/helm/v3/pkg/release"
 )
 
 // ReleaseState is a wrapper for interacting with the stored release info

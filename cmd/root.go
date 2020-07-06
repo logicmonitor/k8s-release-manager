@@ -20,7 +20,6 @@ var kubeConfig string
 var kubeContext string
 var storagePath string
 var releaseName string
-var tillerNamespace string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -37,7 +36,7 @@ Release Manager operations can be run locally or within the Kubernetes cluster.
 The application also supports a daemon mode that will periodically update the
 saved state.
 
-To export releases, Release Manager queries Tiller to collect metadata for all
+To export releases, Release Manager queries  the target Kubernetes cluster to collect metadata for all
 releases currently deployed in the source cluster and writes this metadata to
 the configured backend data store. If the Release Manager is deployed in
 daemon mode via its own Helm chart, it will also store metadata about itself.
@@ -46,12 +45,12 @@ Manager with the same configuration as the previous managed, causing both
 instances to write conflicting state to the backend.
 
 To import releases, Release Manager retrieves the state stored in the backend,
-connects to Tiller in the target Kubernetes cluster, and deploys the saved
+connects to the target Kubernetes cluster, and deploys the saved
 releases to the cluster.
 
 Release Manager will use --kubeconfig/--kubecontext, $KUBECONFIG, or
 ~/.kube/config to establish a connection to the Kubernetes cluster. If none of
-these configuraitons are set, an in-cluster connection will be attempted. All
+these configuration are set, an in-cluster connection will be attempted. All
 actions will be performed against the current cluster and a given command will
 only perform actions against a single cluster, i.e. 'export' will
 export releases from the configured cluster while 'import' will deploy releases
@@ -74,10 +73,6 @@ to the configured cluster and 'clear' requires no custer connection whatsoever.
 		rlsmgrconfig.ClusterConfig = &config.ClusterConfig{
 			KubeConfig:  kubeConfig,
 			KubeContext: viper.GetString("kubecontext"),
-		}
-
-		rlsmgrconfig.Helm = &config.HelmConfig{
-			TillerNamespace: viper.GetString("tillerNamespace"),
 		}
 		if rlsmgrconfig.DebugMode {
 			log.SetLevel(log.DebugLevel)
@@ -109,15 +104,13 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&kubeConfig, "kubeconfig", "", "", "Use this kubeconfig path, otherwise use the environment variable KUBECONFIG or ~/.kube/config")
 	RootCmd.PersistentFlags().StringVarP(&kubeContext, "kubecontext", "", "", "Use this kube context, otherwise use the default")
 	RootCmd.PersistentFlags().StringVarP(&storagePath, "path", "", "", "Required. Use this path within the backend for state storage")
-	RootCmd.PersistentFlags().StringVarP(&tillerNamespace, "tiller-namespace", "", "kube-system", "Communicate with the instance of Tiller in this namespace")
 	err := bindConfigFlags(RootCmd, map[string]string{
-		"debug":           "debug",
-		"dryRun":          "dry-run",
-		"verbose":         "verbose",
-		"kubeconfig":      "kubeconfig",
-		"kubecontext":     "kubecontext",
-		"path":            "path",
-		"tillerNamespace": "tiller-namespace",
+		"debug":       "debug",
+		"dryRun":      "dry-run",
+		"verbose":     "verbose",
+		"kubeconfig":  "kubeconfig",
+		"kubecontext": "kubecontext",
+		"path":        "path",
 	})
 	if err != nil {
 		fmt.Println(err)

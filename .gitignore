@@ -7,3 +7,9 @@ notes.txt
 /releasemanager
 /test.sh
 /teststate
+.vscode/
+/dummy-releases
+/dummy
+releasemanagerv3
+work-sheet
+output.txt

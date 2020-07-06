@@ -1,6 +1,6 @@
 NAMESPACE  := logicmonitor
 REPOSITORY := releasemanager
-VERSION    := 0.2.0-alpha.1
+VERSION    := 1.0.0
 
 all:
 	docker build --rm --build-arg VERSION=$(VERSION) --build-arg CI=$(CI) -t $(NAMESPACE)/$(REPOSITORY):latest .

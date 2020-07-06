@@ -12,7 +12,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+var allNamespaces bool
 var daemon bool
+var deployed bool
+var failed bool
 var mgrstate *state.State
 var pollingInterval int
 
@@ -20,13 +23,11 @@ var exportCmd = &cobra.Command{
 	Use:   "export",
 	Short: "Export Helm release state",
 	Long: `
-Release Manager Export will contact Tiller in the configured cluster, collect
-all metadata for each deployed release, and write that metadata to the
-configured backend. This metadata can later be consumed by Release Manager
-import to re-install the saved releases to a different cluster.
-
-Export can also be run in daemon mode to continuously update the stored state to
-reflect ongoing changes to the cluster.
+Release Manager Export will collect all metadata for each deployed release, 
+and write that metadata to the configured backend. This metadata can later be 
+consumed by Release Manager import to re-install the saved releases to a 
+different cluster.Export can also be run in daemon mode to continuously 
+update the stored state to reflect ongoing changes to the cluster.
 
 Installing releasemanager daemon via Helm chart
 	helm repo add logicmonitor https://logicmonitor.github.io/k8s-helm-charts
@@ -49,6 +50,13 @@ writing state to the same backend path, causing conflicts, overwrites, chaos.`,
 			ReleaseName:     viper.GetString("releaseName"),
 			PollingInterval: viper.GetInt64("pollingInterval"),
 			Namespaces:      viper.GetStringSlice("namespaces"),
+		}
+
+		// Passing in here,may make flags but should always be true for these settings
+		rlsmgrconfig.OptionsConfig.List = &config.ListConfig{
+			Deployed:      true,
+			Failed:        true,
+			AllNamespaces: true,
 		}
 	},
 }
@@ -82,4 +90,5 @@ func exportRun(cmd *cobra.Command, args []string) { // nolint: dupl
 	if err != nil {
 		log.Errorf("%v", err)
 	}
+
 }

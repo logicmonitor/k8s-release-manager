@@ -8,3 +8,5 @@
 !proto
 !scripts
 !vendor
+!go.sum
+!go.mod

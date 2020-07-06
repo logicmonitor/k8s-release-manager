@@ -3,7 +3,6 @@ package export
 import (
 	"time"
 
-	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/healthz"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
@@ -11,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Export polls Tiller and exports releases
+// Export exports releases
 type Export struct {
 	Config     *config.Config
 	HelmClient *lmhelm.Client
@@ -20,13 +19,10 @@ type Export struct {
 
 // New instantiates and returns a Export and an error if any.
 func New(rlsmgrconfig *config.Config, state *state.State) (*Export, error) {
-	kubernetesClient, kubernetesConfig, err := client.KubernetesClient(rlsmgrconfig.ClusterConfig)
-	if err != nil {
-		return nil, err
-	}
 
 	helmClient := &lmhelm.Client{}
-	err = helmClient.Init(rlsmgrconfig.Helm, kubernetesClient, kubernetesConfig)
+
+	err := helmClient.Init(rlsmgrconfig.ClusterConfig, rlsmgrconfig.OptionsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +64,7 @@ func (m *Export) run() error {
 
 	// daemon mode. run periodically forever
 	for {
-		log.Debugf("Checking Tiller for installed releases")
+		log.Debugf("Checking for installed releases")
 		err := m.strategy()()
 		if err != nil {
 			healthz.IncrementFailure()
