@@ -9,7 +9,7 @@ import (
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	log "github.com/sirupsen/logrus"
-	rls "k8s.io/helm/pkg/proto/hapi/release"
+	rls "helm.sh/helm/v3/pkg/release"
 )
 
 // State represents the release manager's state information
@@ -45,11 +45,11 @@ func (s *State) Update(releases []*rls.Release) error {
 	log.Debugf("Updating state")
 	// locate the release managing this application
 	for _, r := range releases {
-		if s.isManagerRelease(r.GetName()) {
+		if s.isManagerRelease(r.Name) {
 			return s.updateState(&Info{
 				ReleaseFilename: release.Filename(r),
 				ReleaseName:     s.Config.Export.ReleaseName,
-				ReleaseVersion:  r.GetVersion(),
+				ReleaseVersion:  int32(r.Version),
 			})
 		}
 	}

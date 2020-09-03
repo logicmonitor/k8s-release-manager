@@ -1,97 +1,116 @@
 package lmhelm
 
 import (
-	"fmt"
-
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/constants"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/helm/pkg/helm"
-	helm_env "k8s.io/helm/pkg/helm/environment"
-	"k8s.io/helm/pkg/helm/portforwarder"
-	rls "k8s.io/helm/pkg/proto/hapi/release"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/kube"
+	rls "helm.sh/helm/v3/pkg/release"
 )
 
-// Client represents the LM helm client wrapper
+// Client represents the LM helm client v3 wrapper
 type Client struct {
-	Helm             *helm.Client
-	helmConfig       *config.HelmConfig
-	kubernetesClient *kubernetes.Clientset
-	kubernetesConfig *rest.Config
-	settings         helm_env.EnvSettings
+	helmConfig    *action.Configuration
+	settings      *cli.EnvSettings
+	clusterConfig *config.ClusterConfig
+	optionsConfig config.OptionsConfig
 }
 
 // Init initializes the LM helm wrapper struct
-func (c *Client) Init(helmConfig *config.HelmConfig, kubernetesClient *kubernetes.Clientset, kubernetesConfig *rest.Config) error {
-	var err error
-	c.helmConfig = helmConfig
-	c.kubernetesClient = kubernetesClient
-	c.kubernetesConfig = kubernetesConfig
-	c.settings = c.getHelmSettings()
+func (c *Client) Init(clusterConfig *config.ClusterConfig, optionsConfig config.OptionsConfig) error {
 
-	c.Helm, err = c.newHelmClient()
+	var err error
+	c.settings = c.getHelmSettings()
+	c.clusterConfig = clusterConfig
+	c.optionsConfig = optionsConfig
+
 	return err
 }
 
-// NewHeClient returns a helm client
-func (c *Client) newHelmClient() (*helm.Client, error) {
-	tillerHost, err := c.tillerHost()
-	if err != nil {
-		return nil, err
-	}
-
-	log.Debugf("Using tiller host %s", tillerHost)
-	helmClient := helm.NewClient(helm.Host(tillerHost))
-	return helmClient, nil
-}
-
-func (c *Client) tillerHost() (string, error) {
-	log.Debugf("Setting up port forwarding tunnel to tiller")
-	tunnel, err := portforwarder.New(c.settings.TillerNamespace, c.kubernetesClient, c.kubernetesConfig)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("127.0.0.1:%d", tunnel.Local), nil
-}
-
-// HelmSettings returns the helm client settings
-func (c *Client) HelmSettings() helm_env.EnvSettings {
-	return c.settings
-}
-
-// Config returns the client application settings
-func (c *Client) Config() *config.HelmConfig {
-	return c.helmConfig
-}
-
-func (c *Client) getHelmSettings() helm_env.EnvSettings {
-	var settings helm_env.EnvSettings
-
-	settings.TillerNamespace = c.helmConfig.TillerNamespace
-	if settings.TillerNamespace == "" {
-		settings.TillerNamespace = constants.DefaultTillerNamespace
-	}
-	return settings
+func (c *Client) getHelmSettings() *cli.EnvSettings {
+	return cli.New()
 }
 
 // ListInstalledReleases lists all currently installed helm releases
 func (c *Client) ListInstalledReleases() ([]*rls.Release, error) {
-	rsp, err := c.Helm.ListReleases(listOpts()...)
+
+	if err := c.initActionConfig(""); err != nil {
+		return nil, err
+	}
+
+	list := action.NewList(c.helmConfig)
+
+	// List Options:
+	list.Deployed = c.optionsConfig.List.Deployed
+	list.Failed = c.optionsConfig.List.Failed
+	list.AllNamespaces = c.optionsConfig.List.AllNamespaces
+
+	results, err := list.Run()
 	if err != nil {
 		return nil, err
 	}
-	return rsp.Releases, nil
+
+	return results, nil
+
 }
 
-// Install a release
+// Install ...
 func (c *Client) Install(r *rls.Release) error {
-	vals := []byte(r.GetConfig().GetRaw())
-	log.Debugf("Installing release %s", r.GetName())
-	rsp, err := c.Helm.InstallReleaseFromChart(r.GetChart(), r.GetNamespace(), installOpts(r, vals, c.helmConfig)...)
+
+	if err := c.initActionConfig(r.Namespace); err != nil {
+		return err
+	}
+
+	install := action.NewInstall(c.helmConfig)
+
+	// Install Options:
+	install.Wait = c.optionsConfig.Install.Wait
+	install.Timeout = c.optionsConfig.Install.Timeout
+	install.Replace = c.optionsConfig.Install.Replace
+	install.CreateNamespace = c.optionsConfig.Install.CreateNamespace
+	install.Atomic = c.optionsConfig.Install.Atomic
+	install.DryRun = c.optionsConfig.Install.DryRun
+
+	install.ReleaseName = r.Name
+	install.Namespace = r.Namespace
+
+	log.Debugf("Installing release %s", r.Name)
+
+	rsp, err := install.Run(r.Chart, r.Config)
+
 	if rsp != nil {
-		log.Infof("Release %s status %s", rsp.Release.GetName(), rsp.Release.GetInfo().GetStatus().GetCode().String())
+		log.Infof("Release %s status %s", rsp.Name, rsp.Info.Status.String())
 	}
 	return err
+
+}
+func (c *Client) initActionConfig(namespace string) error {
+
+	var err error
+
+	if c.clusterConfig.KubeConfig == "" {
+		c.helmConfig, err = getActionConfig(c.settings.KubeConfig, c.settings.KubeContext, namespace)
+		if err != nil {
+			return err
+		}
+	} else {
+		c.helmConfig, err = getActionConfig(c.clusterConfig.KubeConfig, c.clusterConfig.KubeContext, namespace)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func getActionConfig(kubeConfig, context, namespace string) (*action.Configuration, error) {
+
+	actionConfig := new(action.Configuration)
+
+	if err := actionConfig.Init(kube.GetConfig(kubeConfig, context, namespace), namespace, constants.HelmDriver, log.Printf); err != nil {
+		return nil, err
+	}
+
+	return actionConfig, nil
 }

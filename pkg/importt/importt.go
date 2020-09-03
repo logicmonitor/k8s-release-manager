@@ -3,13 +3,12 @@ package importt
 import (
 	"fmt"
 
-	"github.com/logicmonitor/k8s-release-manager/pkg/client"
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/lmhelm"
 	"github.com/logicmonitor/k8s-release-manager/pkg/release"
 	"github.com/logicmonitor/k8s-release-manager/pkg/state"
 	log "github.com/sirupsen/logrus"
-	rls "k8s.io/helm/pkg/proto/hapi/release"
+	rls "helm.sh/helm/v3/pkg/release"
 )
 
 // Import remotely stored releases
@@ -21,14 +20,10 @@ type Import struct {
 
 // New instantiates and returns a Deleter and an error if any.
 func New(rlsmgrconfig *config.Config, state *state.State) (*Import, error) {
+
 	helmClient := &lmhelm.Client{}
 
-	kubernetesClient, kubernetesConfig, err := client.KubernetesClient(rlsmgrconfig.ClusterConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	err = helmClient.Init(rlsmgrconfig.Helm, kubernetesClient, kubernetesConfig)
+	err := helmClient.Init(rlsmgrconfig.ClusterConfig, rlsmgrconfig.OptionsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +62,7 @@ func (t *Import) deployReleases(releases []*rls.Release) error {
 	var err error
 	var sem = make(chan int, t.Config.Import.Threads)
 	for _, r := range releases {
-		fmt.Printf("Deploying release %s to namespace %s\n", r.GetName(), r.GetNamespace())
+		fmt.Printf("Deploying release %s to namespace %s\n", r.Name, r.Namespace)
 
 		r, err = t.updateManagerRelease(r)
 		if err != nil {
@@ -99,18 +94,18 @@ func (t *Import) deployRelease(r *rls.Release) {
 	err := t.HelmClient.Install(r)
 	if err != nil {
 		if lmhelm.ErrorReleaseExists(err) {
-			fmt.Printf("Skipping release: %s already exists\n", r.GetName())
+			fmt.Printf("Skipping release: %s already exists\n", r.Name)
 		} else {
-			fmt.Printf("Error deploying release %s: %v\n", r.GetName(), err)
+			fmt.Printf("Error deploying release %s: %v\n", r.Name, err)
 		}
 	} else {
-		fmt.Printf("Successfully deployed release %s\n", r.GetName())
+		fmt.Printf("Successfully deployed release %s\n", r.Name)
 	}
 }
 
 // if this is the release manager release, update the backend path, else return unmodified
 func (t *Import) updateManagerRelease(r *rls.Release) (*rls.Release, error) {
-	if t.Config.Import.NewStoragePath == "" || t.State.Info == nil || r.GetName() != t.State.Info.ReleaseName {
+	if t.Config.Import.NewStoragePath == "" || t.State.Info == nil || r.Name != t.State.Info.ReleaseName {
 		return r, nil
 	}
 	return updateManagerStoragePath(r, t.Config.Import.NewStoragePath)

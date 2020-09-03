@@ -46,6 +46,7 @@ func (d *Delete) deleteReleases(releaseNames []string) error {
 			if e != nil {
 				log.Errorf("Error retrieving remote release %s: %v", f, e)
 			}
+
 			if d.Config.DebugMode {
 				fmt.Printf("%s\n", release.ToString(r, d.Config.VerboseMode))
 			}

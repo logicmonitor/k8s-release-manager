@@ -36,3 +36,8 @@ const (
 	// ValueStoragePath is the helm --set path for --path
 	ValueStoragePath = "backend.path"
 )
+
+const (
+	// HelmDriver is the storage driver for helm releases
+	HelmDriver = "secrets"
+)

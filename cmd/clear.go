@@ -17,6 +17,7 @@ func init() {
 }
 
 func clearRun(cmd *cobra.Command, args []string) { //nolint: dupl
+
 	delete, err := delete.New(rlsmgrconfig, mgrstate)
 	if err != nil {
 		log.Fatalf("Failed to create Release Manager deleter: %v", err)
@@ -26,4 +27,5 @@ func clearRun(cmd *cobra.Command, args []string) { //nolint: dupl
 	if err != nil {
 		log.Errorf("%v", err)
 	}
+
 }

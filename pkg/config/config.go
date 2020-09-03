@@ -1,13 +1,15 @@
 package config
 
+import "time"
+
 // Config represents the application's configuration
 // codebeat:disable[TOO_MANY_IVARS]
 type Config struct {
 	Backend       *BackendConfig
 	Export        *ExportConfig
-	Helm          *HelmConfig
 	ClusterConfig *ClusterConfig
 	Import        *ImportConfig
+	OptionsConfig OptionsConfig
 	DebugMode     bool
 	DryRun        bool
 	VerboseMode   bool
@@ -32,12 +34,6 @@ type ExportConfig struct {
 	Namespaces      []string
 }
 
-// HelmConfig represents the application's configurations for interacting with Helm
-type HelmConfig struct {
-	ReleaseTimeoutSec int64
-	TillerNamespace   string
-}
-
 //ImportConfig represents configuration options for the backend storage
 type ImportConfig struct {
 	Force             bool
@@ -47,4 +43,27 @@ type ImportConfig struct {
 	Values            map[string]string
 	ExcludeNamespaces []string
 	Threads           int64
+}
+
+// OptionsConfig represents the client configurations options for listing and installing releases
+type OptionsConfig struct {
+	Install *InstallConfig
+	List    *ListConfig
+}
+
+// InstallConfig represents the configuration options for installing releases
+type InstallConfig struct {
+	Wait            bool
+	Timeout         time.Duration
+	Replace         bool
+	CreateNamespace bool
+	Atomic          bool
+	DryRun          bool
+}
+
+// ListConfig represents the configuration options for listing releases
+type ListConfig struct {
+	Deployed      bool
+	Failed        bool
+	AllNamespaces bool
 }

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/logicmonitor/k8s-release-manager/pkg/config"
 	"github.com/logicmonitor/k8s-release-manager/pkg/importt"
@@ -15,6 +16,10 @@ var force bool
 var newStoragePath, namespace, target string
 var releaseTimeoutSec, threads int
 var values map[string]string
+var atomic bool
+var wait bool
+var createNamespace bool
+var replace bool
 
 var importCmd = &cobra.Command{
 	Use:   "import",
@@ -39,7 +44,6 @@ release, you should use the helm delete --purge to delete it first.`,
 		}
 
 		_ = viper.GetStringMapString("valueUpdates")
-		rlsmgrconfig.Helm.ReleaseTimeoutSec = viper.GetInt64("releaseTimeout")
 		rlsmgrconfig.Import = &config.ImportConfig{
 			Force:             viper.GetBool("force"),
 			NewStoragePath:    viper.GetString("newPath"),
@@ -48,6 +52,15 @@ release, you should use the helm delete --purge to delete it first.`,
 			Values:            values,
 			ExcludeNamespaces: viper.GetStringSlice("excludeNamespaces"),
 			Threads:           viper.GetInt64("threads"),
+		}
+
+		rlsmgrconfig.OptionsConfig.Install = &config.InstallConfig{
+			Wait:            viper.GetBool("wait"),
+			Timeout:         time.Duration(viper.GetInt64("releaseTimeout")) * time.Second,
+			Replace:         viper.GetBool("replace"),
+			CreateNamespace: viper.GetBool("createNamespace"),
+			Atomic:          viper.GetBool("atomic"),
+			DryRun:          false,
 		}
 
 		valid = validateImportConfig()
@@ -60,6 +73,10 @@ release, you should use the helm delete --purge to delete it first.`,
 func init() { // nolint: dupl
 	values = map[string]string{}
 	importCmd.PersistentFlags().BoolVarP(&force, "force", "", false, "Skip safety checks")
+	importCmd.PersistentFlags().BoolVarP(&wait, "wait", "", false, "if set, will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment, StatefulSet, or ReplicaSet are in a ready state before marking the release as successful")
+	importCmd.PersistentFlags().BoolVarP(&replace, "replace", "", false, "re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production")
+	importCmd.PersistentFlags().BoolVarP(&createNamespace, "create-namespace", "", true, "create the release namespace if not present")
+	importCmd.PersistentFlags().BoolVarP(&atomic, "atomic", "", false, "if set, the installation process deletes the installation on failure.")
 	importCmd.PersistentFlags().IntVarP(&releaseTimeoutSec, "release-timeout", "", 300, "The time, in seconds, to wait for an individual Helm release to install")
 	importCmd.PersistentFlags().StringVarP(&newStoragePath, "new-path", "", "", "When installing an exported Release Manager release, update the value of --path")
 	importCmd.PersistentFlags().StringVarP(&namespace, "namespace", "", "", "Specify a specific namespace to import releases from. Required if 'target-namespace' specified")
@@ -69,14 +86,18 @@ func init() { // nolint: dupl
 	importCmd.PersistentFlags().IntVarP(&threads, "threads", "", 50, "The maximum number of threads to use for installing releases")
 
 	err := bindConfigFlags(importCmd, map[string]string{
-		"force":             "force",
-		"releaseTimeout":    "release-timeout",
-		"newPath":           "new-path",
-		"namespace":         "namespace",
-		"target":            "target-namespace",
-		"valueUpdates":      "update-values",
+		"atomic":            "atomic",
+		"createNamespace":   "create-namespace",
 		"excludeNamespaces": "exclude-namespaces",
+		"force":             "force",
+		"namespace":         "namespace",
+		"newPath":           "new-path",
+		"releaseTimeout":    "release-timeout",
+		"replace":           "replace",
+		"target":            "target-namespace",
 		"threads":           "threads",
+		"valueUpdates":      "update-values",
+		"wait":              "wait",
 	})
 	if err != nil {
 		fmt.Println(err)

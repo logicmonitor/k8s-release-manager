@@ -44,6 +44,7 @@ func s3PreRun(cmd *cobra.Command) {
 	if err != nil {
 		log.Fatalf("Failed to initialize state: %v", err)
 	}
+
 }
 
 var s3ExportCmd = &cobra.Command{ // nolint: dupl
