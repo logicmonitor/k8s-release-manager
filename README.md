@@ -4,7 +4,7 @@ will not assist in any issues related to Release Manager.
 ## Release Manager is a tool for importing and exporting Helm release state
 
 -  **Export Helm release state:**
-Release Manager can contact Tiller in the configured cluster, collect
+Release Manager can contact the configured cluster, collect
 all metadata for each deployed release, and write that metadata to the
 configured backend. This metadata can later be consumed by Release Manager
 import to re-install the saved releases to a different cluster.
@@ -36,17 +36,18 @@ Release Manager operations can be run locally or within the Kubernetes cluster.
 The application also supports a daemon mode that will periodically update the
 saved state.
 
-To export releases, Release Manager queries Tiller to collect metadata for all
-releases currently deployed in the source cluster and writes this metadata to
-the configured backend data store. If the Release Manager is deployed in
-daemon mode via its own Helm chart, it will also store metadata about itself.
-This metadata is used to prevent import operations from creating a new Release
-Manager with the same configuration as the previous managed, causing both
-instances to write conflicting state to the backend.
+To export releases, Release Manager queries the target Kubernetes cluster to 
+collect metadata for all releases currently deployed in the source cluster 
+and writes this metadata to the configured backend data store. 
+If the Release Manager is deployed in daemon mode via its own Helm chart, 
+it will also store metadata about itself. This metadata is used to prevent 
+import operations from creating a new Release Manager with the same 
+configuration as the previous managed, causing both instances to write 
+conflicting state to the backend.
 
-To import releases, Release Manager retrieves the state stored in the backend,
-connects to Tiller in the target Kubernetes cluster, and deploys the saved
-releases to the cluster.
+To import releases, Release Manager retrieves the state stored in the backend, 
+connects to the target Kubernetes cluster, 
+and deploys the saved releases to the cluster..
 
 Release Manager will use --kubeconfig/--kubecontext, $KUBECONFIG, or
 ~/.kube/config to establish a connection to the Kubernetes cluster. If none of
